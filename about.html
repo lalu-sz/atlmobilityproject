@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <meta name="generator" content="">
+    <title>Cover Template · Bootstrap</title>
+    <!-- Bootstrap core CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        .nav-pills .nav-link {
+            color: #333;
+            /* Default text color */
+            font-weight: bold;
+            /* Bold text */
+            margin: 0 10px;
+            /* Add spacing between links */
+            border-radius: 20px;
+            /* Rounded corners for pills */
+            transition: background-color 0.3s ease, color 0.3s ease;
+            /* Smooth transition */
+        }
+
+        .nav-pills .nav-link.active {
+            color: #fff;
+            /* Active link text color */
+            background-color: rgba(179, 58, 179, 0.9);
+            /* Active link background color */
+        }
+
+        #content {
+            z-index: 2;
+
+        }
+
+        #text-section {
+            background-color: rgba(250, 232, 249, 0.8);
+
+        }
+
+        /* Ensure the section takes up full width */
+        section {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: transparent;
+            /* Ensure the section doesn't override the text-section background */
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100%;
+            background-image: url('participantIcons/revisedLochnerPlan.png');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(246, 186, 242, 0.7), rgba(179, 58, 179, 0.7));
+            z-index: 1;
+            /* Ensure the overlay is behind the content */
+        }
+
+        .lead.mb-4 {
+            text-align: left;
+        }
+
+        
+        h3.mb-0 {
+            font-size: 40px;
+        }
+
+        .fw-bolder.mb-4 {
+            text-align: left;
+        }
+
+        .my-photo:hover {
+            box-shadow: 0 0 7.5px #0098b3, 0 0 10px #00c2e4, 0 0 12.5px #00c2e4, 0 0 80px #00c2e4;
+            ;
+            /* Green glow */
+            transform: scale(1.05);
+            /* Slightly scale the image */
+        }
+
+        .my-photo {
+            /* Square image. Set min/max width for responsive image. */
+            width: 10vw;
+            /* 10% of the viewport width */
+            height: auto;
+            max-width: 10rem;
+            min-width: 5rem;
+            /* Maintain aspect ratio */
+            aspect-ratio: 1/1;
+            /* Make circle */
+            border-radius: 50%;
+            /* Make image fill entire circle */
+            object-fit: cover;
+            /* Add colorful border effect */
+            border: 4px solid transparent;
+            background-image: linear-gradient(white, white),
+                linear-gradient(45deg, var(--light), var(--highlight));
+            background-origin: border-box;
+            background-clip: content-box, border-box;
+
+            transition: all 0.3s ease-in-out;
+            /* Smooth transition */
+        }
+    </style>
+</head>
+
+<body class="text-center">
+    <div id='content' class="cover-container d-flex w-100 h-100 p-3 mx-auto flex-column">
+        <header class="d-flex justify-content-between align-items-center py-3 mb-4">
+            <!-- Title -->
+            <h3 class="mb-0">the atlanta mobility project</h3>
+
+            <!-- Navigation Pills -->
+            <ul class="nav nav-pills mb-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="index.html" id="home-link">home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="about.html" id="about-link">about</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="author.html" id="author-link">author</a>
+                </li>
+            </ul>
+        </header>
+        <!-- Main Content -->
+        <section id="text-section" class="py-5">
+            <div class="container px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 align-items-center">
+                    <!-- Title and Button Container -->
+                    <div class="col-lg-12 d-flex justify-content-between align-items-center mb-4">
+                        <!-- Title -->
+                        <h2 class="fw-bolder mb-0">About the map</h2>
+                        <!-- Button -->
+                        <a class="btn btn-primary btn-lg px-4 me-sm-3" href="index.html">View Map</a>
+                    </div>
+                </div>
+                <p class="lead mb-4">A single mother of three sentenced to prison for vehicular homicide
+                    hit-in-run DUI; despite her not owning a car, a disgraced baseball player and his massive
+                    SUV, and comedic, yet racialized, images of thieves using a public bus to steal a grand
+                    piano from a white affluent neighborhood.
+
+                    While these narratives seem to be completely random and devoid of each other they in fact
+                    comprise a larger narrative of transportation in the City of Atlanta. A narrative of rugged
+                    individualism and survival (or lack thereof) over inhospitable conditions of mobility. </p>
+
+                <h2 id="insights" class="fw-bolder mb-4">Project Insights</h2>
+                <div class="row">
+                    <!-- List Group for Tabs -->
+                    <div class="col-4">
+                        <div class="list-group" id="list-tab" role="tablist">
+                            <!-- Tab 1: Practices of Movement -->
+                            <a class="list-group-item list-group-item-action active" id="list-practices-list"
+                                data-bs-toggle="list" href="#list-practices" role="tab" aria-controls="practices">
+                                Practices of Movement
+                            </a>
+                            <!-- Tab 2: Access and Ability -->
+                            <a class="list-group-item list-group-item-action" id="list-access-list"
+                                data-bs-toggle="list" href="#list-access" role="tab" aria-controls="access">
+                                Access and Ability
+                            </a>
+                            <!-- Tab 3: Constrain -->
+                            <a class="list-group-item list-group-item-action" id="list-constrain-list"
+                                data-bs-toggle="list" href="#list-constrain" role="tab" aria-controls="constrain">
+                                Constrain
+                            </a>
+                            <!-- Tab 4: Analysis of Participant Sentiment -->
+                            <a class="list-group-item list-group-item-action" id="list-sentiment-list"
+                                data-bs-toggle="list" href="#list-sentiment" role="tab" aria-controls="sentiment">
+                                Analysis of Participant Sentiment
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content -->
+                    <div class="col-8">
+                        <div class="tab-content" id="nav-tabContent">
+                            <!-- Tab 1 Content: Practices of Movement -->
+                            <div class="tab-pane fade show active" id="list-practices" role="tabpanel"
+                                aria-labelledby="list-practices-list">
+                                <p>Content about practices of movement.</p>
+                            </div>
+                            <!-- Tab 2 Content: Access and Ability -->
+                            <div class="tab-pane fade" id="list-access" role="tabpanel"
+                                aria-labelledby="list-access-list">
+                                <p>Content about access and ability.</p>
+                            </div>
+                            <!-- Tab 3 Content: Constrain -->
+                            <div class="tab-pane fade" id="list-constrain" role="tabpanel"
+                                aria-labelledby="list-constrain-list">
+                                <p>Content about constraints.</p>
+                            </div>
+                            <!-- Tab 4 Content: Analysis of Participant Sentiment -->
+                            <div class="tab-pane fade" id="list-sentiment" role="tabpanel"
+                                aria-labelledby="list-sentiment-list">
+                                <p>Content about participant sentiment analysis.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h2 id="data" class="fw-bolder mb-4">About the Data</h2>
+                <div class="row">
+                    <!-- List Group for Tabs -->
+                    <div class="col-4">
+                        <div class="list-group" id="list-tab" role="tablist">
+                            <!-- Tab 1: Practices of Movement -->
+                            <a class="list-group-item list-group-item-action active" id="list-practices-list"
+                                data-bs-toggle="list" href="#list-practices" role="tab" aria-controls="practices">
+                                Participatory Data
+                            </a>
+                            <!-- Tab 2: Access and Ability -->
+                            <a class="list-group-item list-group-item-action" id="list-access-list"
+                                data-bs-toggle="list" href="#list-access" role="tab" aria-controls="access">
+                                Demographic Data
+                            </a>
+                            <!-- Tab 3: Constrain -->
+                            <a class="list-group-item list-group-item-action" id="list-constrain-list"
+                                data-bs-toggle="list" href="#list-constrain" role="tab" aria-controls="constrain">
+                                SMI Data
+                            </a>
+                            <!-- Tab 4: Analysis of Participant Sentiment -->
+                            <a class="list-group-item list-group-item-action" id="list-sentiment-list"
+                                data-bs-toggle="list" href="#list-sentiment" role="tab" aria-controls="sentiment">
+                                tbh
+                            </a>
+                        </div>
+                    </div>
+
+
+
+                </div>
+                <footer>
+                    <hr>
+                    <p>Many thanks to Boyd Shearer for his instruction and assistance. <br>
+                        Check out my other projects on <a href="https://github.com/lalu-sz">GitHub</a> and my <a
+                            href="https://drive.google.com/file/d/1u9nUqclvUbYF0suHBJti0vAPzyB5br8q/view?usp=sharing">Mapping
+                            Portfolio.</a></p>
+
+                    <div>
+                        <a href="https://geography.as.uky.edu/users/lbsp232" target="_blank">
+                            <img class="my-photo"
+                                src="https://geography.as.uky.edu/sites/default/files/styles/fwrd_directory_photo/public/pictures/1717313652.062212%20%283%29.jpg"
+                                alt="Lalu">
+                        </a>
+
+                        <a href="https://newmapsplus.github.io">
+                            <img src="https://newmapsplus.github.io/assets/graphics/logo-2018-nmp-75px-h-gray.png"
+                                alt="University of Kentucky Geography">
+                        </a>
+                    </div>
+                </footer>
+            </div>
+        </section>
+    </div>
+    <!-- Add Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+
+    <script>
+        // Example of keeping your page fresh
+        function setDate() {
+            const date = new Date();
+            const year = date.getFullYear();
+            const month = date.toLocaleString('default', { month: 'long' });
+            const footerText = document.querySelector("footer p");
+            footerText.innerHTML = `${month}, ${year}`;
+        }
+
+        // Get all navigation links
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        // Add click event listeners to each link
+        navLinks.forEach(link => {
+            link.addEventListener('click', function (event) {
+                // Prevent default link behavior (optional)
+                event.preventDefault();
+
+                // Remove the 'active' class from all links
+                navLinks.forEach(link => link.classList.remove('active'));
+
+                // Add the 'active' class to the clicked link
+                this.classList.add('active');
+
+                // Optional: Navigate to the link's href
+                window.location.href = this.href;
+            });
+        });
+
+        // Get the current page URL
+        const currentPage = window.location.href;
+
+        // Loop through each link and check if it matches the current page
+        navLinks.forEach(link => {
+            if (link.href === currentPage) {
+                link.classList.add('active');
+            }
+        });
+    </script>
+
+</body>
+
+</html>

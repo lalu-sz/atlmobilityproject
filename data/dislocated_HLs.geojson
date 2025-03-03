@@ -1,0 +1,17 @@
+{
+"type": "FeatureCollection",
+"name": "dislocated_HLs",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "Name": "P10", "description": "dislocated", "mode": "MARTA", "aliasName": "Jesse" }, "geometry": { "type": "Point", "coordinates": [ -84.37796, 33.77109, 0.0 ] } },
+{ "type": "Feature", "properties": { "Name": "P1", "description": "dislocated", "mode": "driving", "aliasName": "Eshe" }, "geometry": { "type": "Point", "coordinates": [ -84.3324, 33.71352, 0.0 ] } },
+{ "type": "Feature", "properties": { "Name": "P2", "description": "dislocated", "mode": "walking", "aliasName": "Emily" }, "geometry": { "type": "Point", "coordinates": [ -84.38721, 33.74886, 0.0 ] } },
+{ "type": "Feature", "properties": { "Name": "P3", "description": "dislocated", "mode": "driving", "aliasName": "Sarah" }, "geometry": { "type": "Point", "coordinates": [ -84.38252, 33.70274, 0.0 ] } },
+{ "type": "Feature", "properties": { "Name": "P4", "description": "dislocated", "mode": "driving", "aliasName": "Ade" }, "geometry": { "type": "Point", "coordinates": [ -84.46022, 33.67518, 0.0 ] } },
+{ "type": "Feature", "properties": { "Name": "P5", "description": "dislocated", "mode": "driving", "aliasName": "Cheryl" }, "geometry": { "type": "Point", "coordinates": [ -84.39728, 33.76449, 0.0 ] } },
+{ "type": "Feature", "properties": { "Name": "P6", "description": "dislocated", "mode": "MARTA", "aliasName": "Debra" }, "geometry": { "type": "Point", "coordinates": [ -84.46028, 33.67514, 0.0 ] } },
+{ "type": "Feature", "properties": { "Name": "P7", "description": "dislocated", "mode": "driving", "aliasName": "Adam" }, "geometry": { "type": "Point", "coordinates": [ -84.38655, 33.79757, 0.0 ] } },
+{ "type": "Feature", "properties": { "Name": "P8", "description": "dislocated", "mode": "driving", "aliasName": "Ethan" }, "geometry": { "type": "Point", "coordinates": [ -84.38665, 33.79759, 0.0 ] } },
+{ "type": "Feature", "properties": { "Name": "P9", "description": "dislocated", "mode": "MARTA", "aliasName": "Bert" }, "geometry": { "type": "Point", "coordinates": [ -84.38162, 33.70344, 0.0 ] } }
+]
+}
