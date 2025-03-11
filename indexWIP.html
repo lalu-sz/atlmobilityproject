@@ -285,12 +285,27 @@
         .custom-layers-control .leaflet-control-layers-label {
             font-weight: bold;
             color: #555;
-
+            /* Medium dark text color */
         }
 
         h3.mb-0 {
             font-size: 40px;
         }
+
+        /* The animation that defines the type motion. */
+        @keyframes spin {
+
+            /* At the beginning of the animation it isn't rotated. */
+            0% {
+                transform: rotate(0deg);
+            }
+
+            /* At the end of the animation it will rotate a full circle. */
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
 
         @media (min-width: 768px) {}
     </style>
@@ -339,10 +354,6 @@
                 <div id="side-pane">
                     <h2>Select a story</h2>
 
-                    <p>Select a person to explore Narratives and Expierences of Mobility.
-                    </p>
-
-
                     <!-- Button Row -->
                     <div id="button-row">
                         <button id="btn-1" class="icon-btn">
@@ -353,8 +364,23 @@
                             <img src="participantIcons/white_fem.png" alt="Icon 2">
                             <span>Emily</span>
                         </button>
-
+                        <button id="btn-3" class="icon-btn">
+                            <img src="participantIcons/black_male.png" alt="Icon 3">
+                            <span>Bert</span>
+                        </button>
+                        <button id="btn-4" class="icon-btn">
+                            <img src="participantIcons/white_nb.png" alt="Icon 4">
+                            <span>Jesse</span>
+                        </button>
+                        <button id="btn-5" class="icon-btn">
+                            <img src="participantIcons/black_fem_m.png" alt="Icon 5">
+                            <span>Eshe</span>
+                        </button>
                     </div>
+
+                    <p>Select a person to explore Narratives and Expierences of Mobility.
+                    </p>
+                    <p>Use the Legend icon to toggle additional layers on/off.</p>
 
                     <!-- Content Divs -->
                     <div id="debra-1" class="content-div">
@@ -374,8 +400,7 @@
                         <h3>
                             "I depend on God to get me where I need to go"
                         </h3>
-                        <button class="next-btn" data-next="debra-2">Next</button>
-
+                        <button class="next-btn" onclick="showContent('debra-2')">Next</button>
                     </div>
                     <div id="debra-2" class="content-div" style="display: none;">
                         <p> In the city that is famously known to "pray for transit" (Karner and Duckworth, 2018), Debra
@@ -384,8 +409,7 @@
                         <p> However, these prayers can often go unanswered as it did for Debra on a sweltering summer
                             afternoon in late May of 2024.</p>
                         <p>Overall, Debra does find it relatively easy to move throughout the city</p>
-                        <button class="next-btn" data-next="debra-3">Next</button>
-
+                        <button class="next-btn" onclick="showContent('debra-3')">Next</button>
                     </div>
                     <div id="debra-3" class="content-div" style="display: none;">
 
@@ -403,9 +427,7 @@
                             interview (August 2024), Debra was still healing from the incident and praying she didnt
                             need surgery as one of her doctors suggested.</p>
 
-                        <button class="next-btn" data-next="debra-1">Restart</button>
-
-
+                        <button class="next-btn" onclick="showContent('debra-1')">Back to Page 1</button>
                     </div>
 
                     <div id="emily-1" class="content-div" style="display: none;">
@@ -423,8 +445,7 @@
                         </p>
 
                         <pv>Sadly for Emily, that time came a lot sooner than expect.</pv>
-                        <button class="next-btn" data-next="emily-2">Next</button>
-
+                        <button class="next-btn" onclick="showContent('emily-2')">Next</button>
                     </div>
                     <div id="emily-2" class="content-div" style="display: none;">
                         <h3>Emily's Story</h3>
@@ -443,7 +464,7 @@
                             Every once and a while I’ll pass the same spot and I’ll see pieces of cars scattered across
                             the roadway and it makes me feel less alone." </p>
 
-                        <button class="next-btn" data-next="emily-3">Next</button>
+                        <button class="next-btn" onclick="showContent('emily-3')">Next</button>
                     </div>
                     <div id="emily-3" class="content-div" style="display: none;">
                         <h3>Emily's Story</h3>
@@ -458,19 +479,64 @@
                             income, she would only afford older, used cars which just didnt seem like they could hold up
                             against these mean Atlanta streets.
                         </p>
-                        <button class="next-btn" data-next="emily-1">Restart</button>
+
+                        <button class="next-btn" onclick="showContent('emily-1')">Next</button>
                     </div>
 
-                    <p>Use the Legend icon to toggle additional layers on/off.</p>
+                    <div id="bert-1" class="content-div" style="display: none;">
+                        <h3>Bert's Story</h3>
+                        <p>This is the content for Button 3.</p>
+                        <button class="next-btn" onclick="showContent('bert-2')">Next</button>
+                    </div>
+                    <div id="bert-2" class="content-div" style="display: none;">
+                        <h3>Bert's Story</h3>
+                        <p>This is the content for Button 3.</p>
+                        <button class="next-btn" onclick="showContent('bert-3')">Next</button>
+                    </div>
+                    <div id="bert-3" class="content-div" style="display: none;">
+                        <h3>Bert's Story</h3>
+                        <p>This is the content for Button 3.</p>
+                        <button class="next-btn" onclick="showContent('bert-1')">Next</button>
+                    </div>
 
+                    <div id="jesse-1" class="content-div" style="display: none;">
+                        <h3>Jesse's Story</h3>
+                        <p>This is the content for Button 4.</p>
+                        <button class="next-btn" onclick="showContent('jesse-2')">Next</button>
+                    </div>
+                    <div id="jesse-2" class="content-div" style="display: none;">
+                        <h3>Jesse's Story</h3>
+                        <p>This is the content for Button 4.</p>
+                        <button class="next-btn" onclick="showContent('jesse-3')">Next</button>
+                    </div>
+                    <div id="jesse-3" class="content-div" style="display: none;">
+                        <h3>Jesse's Story</h3>
+                        <p>This is the content for Button 4.</p>
+                        <button class="next-btn" onclick="showContent('jesse-1')">Next</button>
+                    </div>
+                    <!-- -->
+                    <div id="eshe-1" class="content-div" style="display: none;">
+                        <h3>Eshe's Story</h3>
+                        <p>This is the content for Button 5.</p>
+                        <button class="next-btn" onclick="showContent('eshe-1')">Next</button>
+                    </div>
+                    <div id="eshe-2" class="content-div" style="display: none;">
+                        <h3>Eshe's Story</h3>
+                        <p>This is the content for Button 5.</p>
+                        <button class="next-btn" onclick="showContent('eshe-3')">Next</button>
+                    </div>
+                    <div id="eshe-3" class="content-div" style="display: none;">
+                        <h3>Eshe's Story</h3>
+                        <p>This is the content for Button 5.</p>
+                        <button class="next-btn" onclick="showContent('eshe-1')">Next</button>
+                    </div>
+
+                
                     <div id="layer-controls">
                         <p class="lead">
                             <a href="index.html" id="fullscreen-btn" class="btn btn-lg btn-secondary">Return to
                                 Homepage</a>
                         </p>
-                        <label for="volume-slider">Volume:</label>
-<input type="range" id="volume-slider" min="0" max="1" step="0.1" value="1">
-
                     </div>
                 </div>
 
@@ -505,8 +571,6 @@
         let routeLayers = {};
         let allRoutes = [];
         let directionsService;
-
-
         // basically recreating URL with variables
         const a = {
             data: {},
@@ -681,23 +745,25 @@
                 return null;
             }
         }
-        let map; // Declare map at the top so it's accessible everywhere
 
-        async function setupMap(zcta, homeLoc, points, places) {
+        // Use async function to setup the map and fetch initial data
+        async function setupMap(zcta, homeLoc, points, places) { //need to pass local variable to drawMap()
+
             let options = {
                 center: [33.748997, -84.387985],
                 zoom: 13,
                 scrollWheelZoom: false
             };
 
-            // Retrieve cached map options
+            // Check for cached map options
             if (retrieveData('mapOptions')) {
                 console.log('Using cached map options');
                 options = retrieveData('mapOptions');
             }
 
-            // Initialize the map and assign it to the global variable `map`
-            map = L.map('map').setView(options.center, options.zoom);
+            // Create the map with options
+            const map = L.map('map').setView(options.center, options.zoom);
+            // Create CartoDB basemap and add to map after data loads
 
             var Esri_WorldTerrain = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}', {
                 attribution: 'Tiles &copy; Esri &mdash; Source: USGS, Esri, TANA, DeLorme, and NPS',
@@ -716,8 +782,11 @@
                 storeData('mapOptions', data);
             });
 
-            console.log("Map initialized:", map);
             return map;
+
+            // Remove the spinner.
+            document.querySelector("#loading").remove();
+
         }
 
         // Define the function to get the census data.
@@ -760,6 +829,8 @@
                 feature.properties.joinField = feature.properties.TRACTCE + feature.properties.BLKGRPCE;
             });
 
+            console.log('newcolumn', countyGeom);
+
             // Loop through the census data.
             for (const census of censusData) {
                 // Slice off last two elements, concatenate, and assign to countyFips.
@@ -796,6 +867,7 @@
             return acsData;
         }// end getCensus
 
+        // Load local data first
         getLocalData().then((dataUpload) => {
             if (!dataUpload) {
                 console.error("Failed to load local data. Check file paths or JSON syntax.");
@@ -805,15 +877,15 @@
             let { zcta, homeLoc, points, places, roads } = dataUpload;
             points = dataUpload.points; // Global access to points
 
+            // Ensure points data is valid
             if (!points || !points.features) {
                 console.error("Points data is missing or invalid.");
                 return;
             }
 
-            // Wait for the map to be ready before calling nextContent
-            setupMap(zcta, homeLoc, points, places, roads).then((initializedMap) => {
-                map = initializedMap;  // Ensure map is assigned globally
-                createRoutes(points, map);
+            // Setup the map BEFORE creating routes
+            setupMap(zcta, homeLoc, points, places, roads).then((map) => {
+                createRoutes(points, map); // Ensure map is passed
                 getCensus().then((acsData) => {
                     drawMap(zcta, homeLoc, points, places, roads, map, acsData);
                     setupEventListeners(map);
@@ -894,40 +966,24 @@
                 return;
             }
 
+            points.features.forEach(feature => {
+                if (feature.geometry && feature.geometry.coordinates.length === 2) {
+                    const lat = feature.geometry.coordinates[1];
+                    const lng = feature.geometry.coordinates[0];
+
+                    L.circleMarker([lat, lng], {
+                        radius: 6,
+                        fillColor: "blue",
+                        color: "white",
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    }).addTo(map);
+                }
+            });
+
+            console.log("Highlighted participant routes.");
         }
-
-        // Define the content steps and their corresponding map coordinates
-        const contentLocations = {
-            "debra-1": [33.66666, -84.39528],  // Example coordinates
-            "debra-2": [33.68058, -84.42904],
-            "debra-3": [33.753, -84.383],
-            "emily-1": [33.75036492066822, -84.37557763552553],
-            "emily-2": [33.78995, -84.37259],
-            "emily-3": [33.74957, -84.39103],
-        };
-        window.nextContent = function (currentId, nextId) {
-            console.log("Navigating from:", currentId, "to:", nextId);
-
-            let currentDiv = document.getElementById(currentId);
-            let nextDiv = document.getElementById(nextId);
-
-            if (currentDiv && nextDiv) {
-                currentDiv.style.display = "none"; // Hide current page
-                nextDiv.style.display = "block"; // Show next page
-            } else {
-                console.error("Invalid navigation:", currentId, "→", nextId);
-                return;
-            }
-
-            // Ensure map is initialized before calling setView()
-            if (map && contentLocations[nextId]) {
-                console.log("Moving map to:", contentLocations[nextId]);
-                map.setView(contentLocations[nextId], 15); // Adjust zoom as needed
-            } else {
-                console.warn("No map instance or coordinates for", nextId);
-            }
-        };
-
 
         // Display GeoJSON
         function drawMap(zcta, homeLoc, points, places, roads, map, acsData) {
@@ -1036,19 +1092,81 @@ white pop: ~ ${(
                 pane: 'pointsPane', // Assign to pointsPane
                 pointToLayer: (feature, latlng) => {
                     let pointColor = pointsScale(feature.properties.description);
-
-                    // Create a circle marker
-                    let marker = L.circleMarker(latlng, {
-                        radius: 5, // Adjust size as needed
+                    // Default style for the marker
+                    let markers = {
+                        radius: 100,
                         fillColor: pointColor,
                         color: pointColor,
                         weight: 1,
                         fillOpacity: 1
-                    });
+                    };
 
-                    marker.addTo(map); // Directly add to the map
+                    let bufferRadius = 1; // Default buffer size
+                    let bufferColor = "red";
+                    let mode = "";
+
+                    // Set buffer size and marker style based on feature properties
+                    if (feature.properties) {
+                        const { description, mode: featureMode } = feature.properties;
+                        console.log("Mode:", featureMode, "Buffer Radius:", bufferRadius);
+
+                        if (description === "Home Location") {
+                            markers.fillOpacity = 0; // Hide Home Location
+                            markers.radius = 0;
+                            bufferRadius = 0;
+                        } else if (description !== "Home Location") {
+                            markers.fillColor = pointColor;
+                            markers.radius = 2;
+                            markers.fillOpacity = 1;
+
+                            if (featureMode === "driving") {
+                                bufferRadius = 8046.72; // 7.5 miles in meters
+                                bufferColor = "#640112";
+                                mode = "driving";
+                            } else if (featureMode === "walking") {
+                                bufferRadius = 400; // 400m is standard walking distance in planning (1/4 mile)
+                                bufferColor = "#FF7F00";
+                                mode = "walking";
+                            } else if (featureMode === "MARTA") {
+                                bufferRadius = 800; // People are willing to walk longer for faster transit. Doubles the walking standard.
+                                bufferColor = "#C83E00";
+                                mode = "MARTA";
+                            } else {
+                                bufferRadius = 0;
+                            }
+                        }
+                    }
+                    // Create the circle marker for the point
+                    const marker = L.circleMarker(latlng, markers);
+                    // Create the buffer circle around the marker if necessary
+                    if (bufferRadius > 0 && mode) {
+                        const buffer = L.circle(latlng, {
+                            radius: bufferRadius,
+                            color: bufferColor,
+                            fillColor: bufferColor,
+                            fillOpacity: 0.1, // Increased opacity to make buffer more visible
+                            weight: 5
+                        });
+                        // Store the buffer in the dictionary by mode
+                        buffersByMode[mode].push(buffer);
+                        marker.buffer = buffer;
+                    }
+
+                    return marker; // Return the marker to be added to the points layer
+                },
+
+                // Adding popups
+                onEachFeature: (feature, layer) => {
+                    if (feature.properties) {
+                        const { description, mode } = feature.properties;
+                        layer.bindPopup(
+                            `<h3>Participant: ${description}</h3>
+<p>Mode of Transport: ${mode}</p>`
+                        );
+                    }
                 }
-            });
+            }).addTo(map);
+
 
             const atlhoe = L.geoJSON(places, {
                 pane: 'atlantaPane', // Assign to atlantaPane
@@ -1111,40 +1229,18 @@ white pop: ~ ${(
                 "City Outline": atlhoe,
                 "Participant Locations": pointsLayer,
                 "Particpant Neigborhoods": homes,
-
+               
             }
 
             L.Control.Layers.Custom = L.Control.Layers.extend({
                 onAdd: function (map) {
                     var container = L.Control.Layers.prototype.onAdd.call(this, map);
                     L.DomUtil.addClass(container, 'custom-layer-control');
-
-                    // Create legend inside layer control
-                    var legendContainer = L.DomUtil.create("div", "legend-container", container);
-
-                    // Define categories from the scale (should match `pointsScale.domain()`)
-                    let categories = ['Home Location', 'Grocery', 'Recreation', 'Workplace', 'Family',
-                        'Religious', 'Education', 'Social', 'School', 'Enjoyment',
-                        'Health', 'Community Engagement'];
-
-                    let legendHTML = `<strong>Types</strong><br>`;
-
-                    // Generate legend HTML dynamically based on categories
-                    categories.forEach(category => {
-                        let color = pointsScale(category); // Get corresponding color
-                        legendHTML += `<i style="background:${color}; width: 15px; height: 15px; display: inline-block; margin-right: 5px;"></i> ${category}<br>`;
-                    });
-
-                    legendContainer.innerHTML = legendHTML;
-
                     return container;
                 }
             });
 
-            // Add the custom layer control with the embedded legend
-            var customLayersControl = new L.Control.Layers.Custom(extraLayers, participantData, { collapsed: false }).addTo(map);
-
-
+            var customLayersControl = new L.Control.Layers.Custom(extraLayers, participantData,{ collapsed: false }).addTo(map);
             // Check for locations stored by user in localStorage
             // if locations exist, draw them on the map
             if (retrieveData('locations')) {
@@ -1157,7 +1253,9 @@ white pop: ~ ${(
             const participants = {
                 "btn-1": { contentId: "debra-1", participantId: "p6" },
                 "btn-2": { contentId: "emily-1", participantId: "p2" },
-
+                "btn-3": { contentId: "bert-1", participantId: "p9" },
+                "btn-4": { contentId: "jesse-1", participantId: "p10" },
+                "btn-5": { contentId: "eshe-1", participantId: "p1" }
             };
 
             Object.keys(participants).forEach(buttonId => {
@@ -1187,21 +1285,6 @@ white pop: ~ ${(
                 console.error("Content ID not found:", contentId);
             }
         }
-
-        document.querySelectorAll(".next-btn").forEach(button => {
-            button.addEventListener("click", function () {
-                let currentDiv = this.parentElement.id; // Get current div ID
-                let nextDivId = this.dataset.next; // Get the 'data-next' value
-
-                if (nextDivId) {
-                    nextContent(currentDiv, nextDivId);
-                } else {
-                    console.error("No 'data-next' attribute found on this button");
-                }
-            });
-        });
-
-
         function highlightParticipantRoutes(selectedParticipantId, map) {
             console.log("Highlighting route for participant:", selectedParticipantId);
 
@@ -1227,76 +1310,87 @@ white pop: ~ ${(
                 }
             });
 
-            //map updates
+            // Ensure the map updates
             map.invalidateSize();
         }
 
+
+
+        // Function to navigate to the next story section
+        function nextContent(currentId, nextId) {
+            console.log("Navigating from:", currentId, "to:", nextId);
+
+            let currentDiv = document.getElementById(currentId);
+            let nextDiv = document.getElementById(nextId);
+
+            if (currentDiv && nextDiv) {
+                currentDiv.style.display = "none"; // Hide the current page
+                nextDiv.style.display = "block"; // Show the next page
+            } else {
+                console.error("Invalid navigation:", currentId, "→", nextId);
+            }
+        }
+
+        // Attach event listeners to all "Next" buttons dynamically
         document.querySelectorAll(".next-btn").forEach(button => {
             button.addEventListener("click", function () {
-                let currentDiv = this.parentElement.id; // Get current div ID
-                let nextDivId = this.dataset.next; // Get the 'data-next' value
+                let currentDiv = this.parentElement.id; // Get current content-div ID
+                let nextDivId = this.getAttribute("onclick").match(/'([^']+)'/)[1]; // Extract next page ID
 
-                if (nextDivId) {
-                    nextContent(currentDiv, nextDivId);
-                } else {
-                    console.error("No 'data-next' attribute found on this button");
-                }
+                nextContent(currentDiv, nextDivId); // Navigate to the next page
             });
         });
 
-        document.addEventListener("DOMContentLoaded", function () {
-    const fullscreenBtn = document.getElementById('fullscreen-btn');
-    const container = document.querySelector('.container-fluid');
-    const musicElement = document.getElementById('background-music');
-    const volumeSlider = document.getElementById("volume-slider");
 
-    // Set the initial volume
-    musicElement.volume = volumeSlider.value;
 
-    // Update volume when slider moves
-    volumeSlider.addEventListener("input", function () {
-        musicElement.volume = this.value;
-    });
 
-    fullscreenBtn.addEventListener('click', function (event) {
-        event.preventDefault();
 
-        if (!document.fullscreenElement) {
-            // Enter fullscreen
-            if (container.requestFullscreen) {
-                container.requestFullscreen();
-            } else if (container.mozRequestFullScreen) {
-                container.mozRequestFullScreen();
-            } else if (container.webkitRequestFullscreen) {
-                container.webkitRequestFullscreen();
-            } else if (container.msRequestFullscreen) {
-                container.msRequestFullscreen();
+
+
+
+
+
+
+
+        document.getElementById('fullscreen-btn').addEventListener('click', function (event) {
+            event.preventDefault();
+            const container = document.querySelector('.container-fluid');
+            const musicElement = document.getElementById('background-music');
+
+            if (!document.fullscreenElement) {
+                // Enter fullscreen
+                if (container.requestFullscreen) {
+                    container.requestFullscreen();
+                } else if (container.mozRequestFullScreen) {
+                    container.mozRequestFullScreen();
+                } else if (container.webkitRequestFullscreen) {
+                    container.webkitRequestFullscreen();
+                } else if (container.msRequestFullscreen) {
+                    container.msRequestFullscreen();
+                }
+
+                // Play music
+                if (musicElement) {
+                    musicElement.play();
+                }
+            } else {
+                // Exit fullscreen
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+
+                // Pause music
+                if (musicElement) {
+                    musicElement.pause();
+                }
             }
-
-            // Play music when entering fullscreen
-            if (musicElement) {
-                musicElement.play();
-            }
-        } else {
-            // Exit fullscreen
-            if (document.exitFullscreen) {
-                document.exitFullscreen();
-            } else if (document.mozCancelFullScreen) {
-                document.mozCancelFullScreen();
-            } else if (document.webkitExitFullscreen) {
-                document.webkitExitFullscreen();
-            } else if (document.msExitFullscreen) {
-                document.msExitFullscreen();
-            }
-
-            // Pause music when exiting fullscreen
-            if (musicElement) {
-                musicElement.pause();
-            }
-        }
-    });
-});
-
+        });
 
         // Get all navigation links
         const navLinks = document.querySelectorAll('.nav-link');
