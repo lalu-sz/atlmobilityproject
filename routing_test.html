@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet Routes by Participant</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+
+    <style>
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+
+        #map {
+            width: 100%;
+            height: 500px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Leaflet Map with Participant Routes</h2>
+    <div id="controls">
+        <label for="participantSelect">Select Participant:</label>
+        <select id="participantSelect">
+            <option value="">-- Select a Participant --</option>
+        </select>
+    </div>
+
+    <div id="map"></div>
+
+    <script>
+        let map;
+        let allRoutes = []; // Store all route polylines globally
+        let routeLayers = {}; // Store polylines per participant
+        const googleApiKey = 'AIzaSyD8eMkO29SDNWF1XQEGE7ejGjjFx2ZUdrU'; // Replace with your Google API key
+
+        const modeColors = {
+            'driving': 'white',
+            'walking': 'grey',
+            'transit': 'orange',
+            'str_line': 'black'
+        };
+
+        function initMap() {
+            console.log("Initializing Leaflet map...");
+            map = L.map('map').setView([33.7490, -84.3880], 13); // Centered on Atlanta
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            loadGeoJSON();
+            document.getElementById("participantSelect").addEventListener("change", highlightParticipantRoutes);
+        }
+
+        function loadGeoJSON() {
+            fetch('data/allPointsMerged.geojson') // Replace with your GeoJSON path
+                .then(response => response.json())
+                .then(geojsonData => {
+                    const groupedRoutes = {};
+                    const participantSet = new Set();
+
+                    geojsonData.features.forEach(feature => {
+                        const participantId = feature.properties.layer;
+                        const coords = {
+                            lat: feature.geometry.coordinates[1],
+                            lng: feature.geometry.coordinates[0]
+                        };
+
+                        if (!participantId) return;
+                        participantSet.add(participantId);
+
+                        if (!groupedRoutes[participantId]) {
+                            groupedRoutes[participantId] = [];
+                        }
+                        groupedRoutes[participantId].push(coords);
+                    });
+
+                    // Populate dropdown with participant IDs
+                    const selectElement = document.getElementById("participantSelect");
+                    participantSet.forEach(id => {
+                        const option = document.createElement("option");
+                        option.value = id;
+                        option.textContent = `Participant ${id}`;
+                        selectElement.appendChild(option);
+                    });
+
+                    // Process routes for each participant
+                    Object.keys(groupedRoutes).forEach(participantId => {
+                        let routeLines = drawModeBasedRoutes(groupedRoutes[participantId], participantId);
+                        routeLayers[participantId] = routeLines;
+                        routeLines.forEach(routeLine => {
+                            allRoutes.push({ routeLine, participantId });
+                        });
+                    });
+
+                    // Highlight routes for the first participant by default
+                    highlightParticipantRoutes();
+                })
+                .catch(error => console.error("Error loading GeoJSON:", error));
+        }
+
+        function drawModeBasedRoutes(points, participantId) {
+            let lines = [];
+
+            // Create a fully connected matrix where every point is linked to every other
+            for (let i = 0; i < points.length; i++) {
+                for (let j = i + 1; j < points.length; j++) {
+                    const startCoords = points[i];
+                    const endCoords = points[j];
+
+                    // Request Directions API for different travel modes
+                    fetchGoogleDirections(startCoords, endCoords, 'driving', lines);
+                    fetchGoogleDirections(startCoords, endCoords, 'walking', lines);
+                    fetchGoogleDirections(startCoords, endCoords, 'transit', lines);
+                    fetchStraightLineRoute(startCoords, endCoords, lines);
+                }
+            }
+
+            return lines;
+        }
+
+        function fetchGoogleDirections(startCoords, endCoords, mode, lines) {
+            const directionsUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${startCoords.lat},${startCoords.lng}&destination=${endCoords.lat},${endCoords.lng}&mode=${mode}&key=${googleApiKey}`;
+
+            fetch(directionsUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.routes && data.routes[0]) {
+                        const route = data.routes[0].legs[0].steps.map(step => [
+                            [step.start_location.lat, step.start_location.lng],
+                            [step.end_location.lat, step.end_location.lng]
+                        ]);
+
+                        route.forEach(coords => {
+                            const polyline = L.polyline(coords, {
+                                color: modeColors[mode],
+                                weight: 4,
+                                opacity: 0.8
+                            }).addTo(map);
+                            lines.push(polyline);
+                        });
+                    }
+                })
+                .catch(error => console.error("Error fetching Google Directions:", error));
+        }
+
+        function fetchStraightLineRoute(startCoords, endCoords, lines) {
+            const polyline = L.polyline([
+                [startCoords.lat, startCoords.lng],
+                [endCoords.lat, endCoords.lng]
+            ], {
+                color: modeColors['str_line'],
+                weight: 2,
+                opacity: 1,
+                dashArray: '1,10'
+            }).addTo(map);
+            lines.push(polyline);
+        }
+
+        function highlightParticipantRoutes() {
+            const selectedId = document.getElementById("participantSelect").value;
+
+            allRoutes.forEach(({ routeLine, participantId }) => {
+                if (selectedId && participantId === selectedId) {
+                    routeLine.setStyle({ color: "blue", weight: 6, opacity: 1 });
+                } else {
+                    routeLine.setStyle({ color: "gray", weight: 4, opacity: 0.3 });
+                }
+            });
+        }
+
+        initMap();
+    </script>
+
+</body>
+</html>

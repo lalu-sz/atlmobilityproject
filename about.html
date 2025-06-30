@@ -12,23 +12,24 @@
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
-        .nav-pills .nav-link {
+       
+       .nav-pills .nav-link {
             color: #333;
             /* Default text color */
             font-weight: bold;
             /* Bold text */
             margin: 0 10px;
             /* Add spacing between links */
-            border-radius: 20px;
+            border-radius: 10px;
             /* Rounded corners for pills */
             transition: background-color 0.3s ease, color 0.3s ease;
             /* Smooth transition */
         }
 
         .nav-pills .nav-link.active {
-            color: #fff;
+            color: #080101;
             /* Active link text color */
-            background-color: rgba(179, 58, 179, 0.9);
+            background-color: rgba(145, 165, 196, 0.9);
             /* Active link background color */
         }
 
@@ -38,25 +39,35 @@
         }
 
         #text-section {
-            background-color: rgba(250, 232, 249, 0.8);
+            width: 100%;
+            height: 100%;
+            padding-top: 2%;
+            padding-left: 2%;
+            padding-right: 2%;
+            background-color:rgba(142, 155, 185, 0.8);
 
         }
 
-        /* Ensure the section takes up full width */
-        section {
-            width: 100%;
-            margin: 0;
-            padding: 0;
-            background-color: transparent;
-            /* Ensure the section doesn't override the text-section background */
+       
+        /*view map Button */
+        #view-btn {
+            height: 20%;/* Adjust width as needed */
+            background-color: rgba(25, 36, 83, 0.8);
+            color: white;
+            border-radius: 10px;
+            text-align: right;
+            font-size: 20px;
+            text-decoration: none;
+            border: none;
+            padding: 15px 32px;
         }
 
         body {
             margin: 0;
             padding: 0;
             display: flex;
-            height: 100%;
-            background-image: url('participantIcons/revisedLochnerPlan.png');
+            min-height: 100%;
+            background-image: url('participantIcons/southBroadSt.jpg');
             background-size: cover;
             background-position: center;
             position: relative;
@@ -64,23 +75,23 @@
 
         body::before {
             content: '';
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(rgba(246, 186, 242, 0.7), rgba(179, 58, 179, 0.7));
+            min-height: 100%; /* ensure the background image/color overlay doesnt change based on content length */
+            background: linear-gradient(rgba(186, 205, 246, 0.7), rgba(26, 35, 75, 0.7));
             z-index: 1;
             /* Ensure the overlay is behind the content */
         }
 
-        .lead.mb-4 {
-            text-align: left;
-        }
-
-        
         h3.mb-0 {
             font-size: 40px;
+        }
+
+        .lead.mb-4 {
+            text-align: left;
         }
 
         .fw-bolder.mb-4 {
@@ -127,18 +138,21 @@
             <!-- Title -->
             <h3 class="mb-0">the atlanta mobility project</h3>
 
-            <!-- Navigation Pills -->
-            <ul class="nav nav-pills mb-0">
-                <li class="nav-item">
-                    <a class="nav-link" href="index.html" id="home-link">home</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="about.html" id="about-link">about</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="author.html" id="author-link">author</a>
-                </li>
-            </ul>
+           <!-- Navigation Pills -->
+           <ul class="nav nav-pills mb-0">
+            <li class="nav-item">
+                <a class="nav-link" href="index.html" id="home-link">home</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="stories.html" id="stories-link">stories</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="about.html" id="about-link">about</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="author.html" id="author-link">author</a>
+            </li>
+        </ul>
         </header>
         <!-- Main Content -->
         <section id="text-section" class="py-5">
@@ -149,7 +163,7 @@
                         <!-- Title -->
                         <h2 class="fw-bolder mb-0">About the map</h2>
                         <!-- Button -->
-                        <a class="btn btn-primary btn-lg px-4 me-sm-3" href="index.html">View Map</a>
+                        <button id="view-btn" href="index.html">View Map</button>
                     </div>
                 </div>
                 <p class="lead mb-4">A single mother of three sentenced to prison for vehicular homicide
