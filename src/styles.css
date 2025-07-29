@@ -1,0 +1,309 @@
+ /* Cover template styles */
+        .inner.cover {
+            width: 100%;
+            height: 100%;
+            padding-top: 2%;
+            padding-left: 2%;
+            padding-right: 2%;
+            background-color: rgba(208, 214, 205, 0.8);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100%;
+            background-image: url('assets/fivepoints.jpg');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(208, 214, 205, 0.7), rgba(39, 40, 38, 0.7));
+            z-index: 1;
+            /* Ensure the overlay is behind the content */
+        }
+
+        .container-fluid {
+            width: 100%;
+            display: flex;
+            height: 100vh;
+            z-index: 2;
+        }
+
+        /* Fullscreen styles */
+        .container-fluid:fullscreen {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+        }
+
+        .container-fluid:-webkit-full-screen {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+        }
+
+        .container-fluid:-moz-full-screen {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+        }
+
+        .container-fluid:-ms-fullscreen {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+        }
+
+        /* Side Panel */
+        #side-pane {
+            display: flex;
+            flex-direction: column;
+            /* Stack children vertically */
+            width: 300px;
+            /* Fixed width for the side panel */
+            background-color: #e8eefa9c;
+            /* Light background color */
+            padding: 20px;
+            /* Add some padding */
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            /* Shadow on the left side */
+            overflow-y: auto;
+            /* Enable scrolling if content overflows */
+        }
+
+        /* Button Row */
+        #button-row {
+            display: flex;
+            justify-content: space-between;
+            /* Distribute space evenly between icons */
+            align-items: center;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        /* Icon Buttons */
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            flex: 1;
+            /* Distribute available space equally */
+            display: flex;
+            flex-direction: column;
+            /* Stack image and text */
+            justify-content: center;
+            align-items: center;
+            /* Center content */
+            text-align: center;
+            /* Ensure text is centered */
+        }
+
+        .icon-btn span {
+            font-family: Arial, sans-serif;
+            font-weight: lighter;
+            text-align: center;
+            color: #333;
+            /* Adjust text color */
+        }
+
+        /* Icon Images */
+        .icon-btn img {
+            width: 70px;
+            /* Set a fixed size for icons */
+            height: 80px;
+            max-width: 100%;
+            /* Ensure icons don't overflow */
+            max-height: 100%;
+        }
+
+        .icon-btn:hover {
+            background-color: rgba(113, 177, 35, 0.3);
+            /* Light background on hover */
+            border-radius: 5px;
+            /* Rounded corners */
+        }
+
+        .icon-btn img {
+            transition: transform 0.2s ease;
+            /* Smooth hover animation */
+        }
+
+        .icon-btn:hover img {
+            transform: scale(1.1);
+            /* Slightly enlarge the icon on hover */
+        }
+
+        .next-btn {
+            display: block;
+            margin: 15px auto;
+            padding: 8px 15px;
+            background-color: #1a2127;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .next-btn:hover {
+            background-color: #92997c;
+        }
+
+        /* Content Divs */
+        .content-div {
+            display: none;
+            /* Hide all content divs by default */
+            padding: 10px;
+            margin-bottom: 20px;
+            /* Add some space below each content div */
+            text-align: left;
+        }
+
+        .container-fluid {
+            text-align: left;
+        }
+
+        .content-div.active {
+            display: block;
+            /* Show the active content div */
+        }
+
+        /* Additional Text */
+        #additional-text {
+            margin-bottom: 20px;
+            /* Add some space below the text */
+        }
+
+        /* Layer Controls */
+        #layer-controls {
+            margin-bottom: 20px;
+            /* Add some space below the controls */
+        }
+
+        /* Center Fullscreen Button */
+        #fullscreen-btn {
+            display: block;
+            /* Ensures it behaves like a block element */
+            width: 60%;
+            /* Adjust width as needed */
+            background-color: rgba(25, 36, 83, 0.8);
+            border-radius: 10px;
+            margin: 0 auto 30px auto;
+            /* Center horizontally */
+            text-align: center;
+            /* Ensures text inside the button is centered */
+        }
+
+
+        #map {
+            background: #b4bd9b;
+            flex: 1;
+            height: 100vh;
+            /* Fixed height */
+            width: 100%;
+            /* Full width of its container */
+            margin: 0 auto;
+            z-index: 1;
+            position: relative;
+        }
+
+        .nav-pills .nav-link {
+            color: #333;
+            /* Default text color */
+            font-weight: bold;
+            /* Bold text */
+            margin: 0 10px;
+            /* Add spacing between links */
+            border-radius: 10px;
+            /* Rounded corners for pills */
+            transition: background-color 0.3s ease, color 0.3s ease;
+            /* Smooth transition */
+        }
+
+        .nav-pills .nav-link.active {
+            color: #080101;
+            /* Active link text color */
+            background-color: rgba(145, 165, 196, 0.9);
+            /* Active link background color */
+        }
+
+        header,
+        footer {
+            position: relative;
+            /* Ensure header and footer are positioned */
+            z-index: 3;
+            /* Ensure they are above the map */
+        }
+
+        /* Add some padding to the main content */
+        main {
+            padding: 20px 0;
+            z-index: 2;
+        }
+
+        /* Style for the custom layers control container */
+        .custom-layers-control {
+            background-color: #bac2d4;
+            /* Light gray background */
+            color: #333;
+            /* Dark text color */
+            padding: 10px;
+            border-radius: 5px;
+            text-align: left;
+        }
+
+
+        /* Additional styles for layer labels */
+        .custom-layers-control .leaflet-control-layers-label {
+            font-weight: bold;
+            color: #555;
+
+        }
+
+        h3.mb-0 {
+            font-size: 40px;
+        }
+
+        
+        .my-photo:hover {
+            box-shadow: 0 0 7.5px #0098b3, 0 0 10px #00c2e4, 0 0 12.5px #00c2e4, 0 0 80px #00c2e4;
+            ;
+            /* Green glow */
+            transform: scale(1.05);
+            /* Slightly scale the image */
+        }
+
+        .my-photo {
+            /* Square image. Set min/max width for responsive image. */
+            width: 10vw;
+            /* 10% of the viewport width */
+            height: auto;
+            max-width: 10rem;
+            min-width: 5rem;
+            /* Maintain aspect ratio */
+            aspect-ratio: 1/1;
+            /* Make circle */
+            border-radius: 50%;
+            /* Make image fill entire circle */
+            object-fit: cover;
+            /* Add colorful border effect */
+            border: 4px solid transparent;
+            background-image: linear-gradient(white, white),
+                linear-gradient(45deg, var(--light), var(--highlight));
+            background-origin: border-box;
+            background-clip: content-box, border-box;
+
+            transition: all 0.3s ease-in-out;
+            /* Smooth transition */
+        }
+
+        @media (min-width: 768px) {}

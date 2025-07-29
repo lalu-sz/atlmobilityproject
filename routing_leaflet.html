@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <!-- Make sure you put this AFTER Leaflet's CSS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Leaflet Routing Machine -->
+  <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
+  <!-- Mapbox GL JS -->
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.7.0/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.7.0/mapbox-gl.css" rel="stylesheet" />
+</head>
+<style>
+  #map {
+    height: 540px;
+  }
+</style>
+
+<body>
+  <div id="map"></div>
+</body>
+<script>
+  const map = L.map("map").setView([33.761, -84.398], 12);
+
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution:
+      '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  }).addTo(map);
+
+  let pointSubset;
+  let p1Pairs;
+  loadGeoJSON();
+
+  //step 0: import and subset data
+  function loadGeoJSON() {
+    fetch("data/ParticipantPointsMerged.geojson") // Replace with your GeoJSON path
+      .then((response) => response.json())
+      .then((geojsonData) => {
+        let groupedRoutes = {};
+        const participantSet = new Set();
+
+        geojsonData.features.forEach((feature) => {
+          const participantId = feature.properties.layer;
+          const coords = {
+            lat: feature.geometry.coordinates[1],
+            lng: feature.geometry.coordinates[0],
+          };
+
+          if (!participantId) return;
+          participantSet.add(participantId);
+
+          if (!groupedRoutes[participantId]) {
+            groupedRoutes[participantId] = [];
+          }
+          groupedRoutes[participantId].push(coords);
+        });
+
+        console.log("All points by ID:", groupedRoutes); //all points; organized by participant
+        //console.log(typeof groupedRoutes); //object (array of arrays)
+
+        //let pointSubset = groupedRoutes.P1
+
+        pointSubset = Object.keys(groupedRoutes).reduce((acc, key) => {
+          if (key === "P1" || key === "P2") {
+            acc[key] = groupedRoutes[key]; //where key = P1 & P2
+          }
+          return acc;
+        }, {});
+
+        //console.log("Points subset by ID:", pointSubset); //participant 1 & 2
+        pairWayPoints(groupedRoutes);
+        styleWayPoints(groupedRoutes);
+      });
+  }
+
+  //step 1: create way points (start-end locations combinations)
+  function pairWayPoints(pointsByParticipant) {
+    //console.log("creating pairs (start-end combos)");
+
+    const allPairs = {};
+
+    for (const participantID in pointsByParticipant) {
+      const points = pointsByParticipant[participantID];
+
+      //console.log(participantID,points);
+      const pairs = [];
+
+      for (let i = 0; i < points.length; i++) {
+        for (let j = 0; j < points.length; j++) {
+          if (i === j) continue; // Skip self-pairs
+
+          if (!points[i] || !points[j]) {
+            console.warn(`Skipping null point in ${participantID}:`, {
+              i: points[i],
+              j: points[j],
+            });
+            continue;
+          }
+
+          if (
+            typeof points[i].lat !== "number" ||
+            typeof points[i].lng !== "number" ||
+            typeof points[j].lat !== "number" ||
+            typeof points[j].lng !== "number"
+          ) {
+            console.warn(`Invalid lat/lng in ${participantID}:`, {
+              i: points[i],
+              j: points[j],
+            });
+            continue;
+          }
+
+          pairs.push({
+            start: points[i],
+            end: points[j],
+          });
+        }
+      }
+
+      allPairs[participantID] = pairs;
+    }
+
+    console.log("Permuted Points by ID:", allPairs);
+    createRoutes(allPairs); // Safe to call now
+
+    return allPairs;
+    /*
+        logic check: P1 starts with 9 locations. Results in 72 pairs (all possible pairs NO SELF PAIRS)
+        Pairs = nPoints * (nPoints - 1); 9*9=81;81-9(self-pairs) = 72
+        */
+  }
+
+  //step 2: create routes between way points
+  function createRoutes(allPairs) {
+    console.log("2.creating routes");
+
+    const router = L.Routing.mapbox(
+      "pk.eyJ1IjoibGFsdS1zei0iLCJhIjoiY2xzdjM4cm90MmJ6bDJsbWpqejJneDhzNCJ9.bja8-N3mGgqGqJXjzu8lrA"
+    );
+    console.log(
+      "2.1 transforming array structure => end: {lat,long} start:{lat,long}  "
+    );
+
+    const layersByParticipant = {};
+
+    Object.keys(allPairs).forEach((id) => {
+      //console.log("participantID", id);
+
+      // Create a new LayerGroup for this participant if not exists
+    if (!layersByParticipant[id]) {
+      layersByParticipant[id] = L.layerGroup().addTo(map);
+    }
+
+      const pairs = allPairs[id];
+
+      pairs.forEach((pair, index) => {
+        try {
+          // Check for missing or malformed data before creating LatLng
+          const startLoc = L.latLng(pair.start.lat, pair.start.lng);
+          const endLoc = L.latLng(pair.end.lat, pair.end.lng);
+
+          // Catch invalid LatLng objects
+          if (
+            !startLoc ||
+            !endLoc ||
+            isNaN(startLoc.lat) ||
+            isNaN(startLoc.lng) ||
+            isNaN(endLoc.lat) ||
+            isNaN(endLoc.lng)
+          ) {
+            console.warn(`Invalid LatLng [${id} - ${index}]`, {
+              startLoc,
+              endLoc,
+            });
+            return;
+          }
+          router.route(
+            [{ latLng: startLoc }, { latLng: endLoc }],
+            function (err, routes) {
+              if (!err && routes && routes.length > 0) {
+
+                
+                L.Routing.line(routes[0], {
+                  styles: [
+                    { color: "#e63946", weight: 3, lineCap: 'butt' },
+                  ],
+                  addWaypoints: false,
+                  
+                }).addTo(layersByParticipant[id]);
+              } 
+            }
+          );
+        } catch (err) {
+          console.error(`Caught error at ${id} pair ${index}:`, err);
+        }
+      });
+    });
+console.log("route layers",layersByParticipant);
+    return layersByParticipant;
+    
+
+  }
+
+  function styleWayPoints(points) {
+    //groupedRates is past as 'points'
+
+    console.log(points);
+
+    const iconPaths = {
+      P1: 'src/assets/participant_points_shape_icons/circle.svg',
+      P2: 'src/assets/participant_points_shape_icons/flare.svg',
+      P3: 'src/assets/participant_points_shape_icons/hexagon.svg',
+      P4: 'src/assets/participant_points_shape_icons/pentagon.svg',
+      P5: 'src/assets/participant_points_shape_icons/rhombus.svg',
+      P6: 'src/assets/participant_points_shape_icons/square.svg',
+      P7: 'src/assets/participant_points_shape_icons/triangle.svg',
+      P8: 'src/assets/participant_points_shape_icons/circle.svg',
+      P9: 'src/assets/participant_points_shape_icons/circle.svg',
+      P10: 'src/assets/participant_points_shape_icons/circle.svg'
+    }
+
+    //create leaflet Icon
+    const leafletIcons = {};
+    for (id in iconPaths) {
+      leafletIcons[id] = L.icon({
+        iconUrl: iconPaths[id],
+        iconSize: [24,24],
+        iconAnchor: [12,12]
+      });
+    }
+
+    //loop through points and assign icon markers
+    for (const id in points) {
+      const coordsArray = points[id];
+      const icon = leafletIcons[id];
+
+      coordsArray.forEach((point)=> {
+        const pointMarkers = L.marker([point.lat, point.lng], {icon}).addTo(map);
+
+        pointMarkers.bindPopup(`${id}`); //undefined
+
+      });
+
+      
+    }
+
+  
+
+  }
+
+
+ 
+</script>
+
+</html>
