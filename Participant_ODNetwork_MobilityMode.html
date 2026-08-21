@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet Routes by Participant</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <!-- Same key already used for Google Maps JS in index.html. callback=initMap defers our
+         own bootstrap until the SDK is actually ready, instead of racing it with a manual call. -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD8eMkO29SDNWF1XQEGE7ejGjjFx2ZUdrU&loading=async&callback=initMap" async defer></script>
+
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        h2 {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            margin: 0;
+            padding: 6px 10px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            font-size: 16px;
+        }
+
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+
+        #map {
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #legend {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: white;
+            padding: 10px 12px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            font-size: 12px;
+            line-height: 1.7;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        #legend strong {
+            display: block;
+            margin: 6px 0 2px;
+            font-size: 12px;
+        }
+
+        #legend strong:first-child {
+            margin-top: 0;
+        }
+
+        #legend .swatch {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin-right: 6px;
+            vertical-align: middle;
+            border-radius: 50%;
+        }
+
+        #legend .shape-swatch {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            margin-right: 6px;
+            vertical-align: middle;
+            background: #444;
+        }
+
+        /* Leaflet gives clickable vector layers tabindex="0" for keyboard accessibility,
+           which makes the browser draw its default focus-ring rectangle around whichever
+           line was just clicked - not something drawn by any of this page's own code. */
+        .leaflet-interactive:focus {
+            outline: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Leaflet Map with Participant Routes</h2>
+    <div id="controls">
+        <label for="participantSelect">Select Participant:</label>
+        <select id="participantSelect">
+            <option value="">-- Select a Participant --</option>
+        </select>
+    </div>
+
+    <div id="legend"></div>
+
+    <div id="map"></div>
+
+    <script>
+        let map;
+        let directionsService; // Instantiated in initMap(), once the SDK has actually loaded
+        let allRoutes = []; // Store all route polylines globally
+        let routeLayers = {}; // Store polylines per participant
+        let allMarkers = []; // Store { marker, participantId } for every point, for dim/isolate
+        let allGroupedRoutes = {}; // participantId -> points[], set once in loadGeoJSON, read
+        // later to compute the bounding-box rectangle for whichever network is isolated
+        let networkBoundingBox = null; // the currently-drawn rectangle layer, if any
+        let boundingBoxParticipantId = null; // who it's currently drawn for, to avoid rebuilding needlessly
+        // Set when a line or a point is clicked while its own participant is already the
+        // isolated one: clicking a line highlights it plus its straight/routed counterpart;
+        // clicking a point highlights every line touching it (of any count) plus the point
+        // itself. Both share this same pair of lists so highlightParticipantRoutes() only
+        // needs one code path. Cleared by clicking a different line/point or changing the
+        // dropdown selection.
+        let highlightedLines = []; // allRoutes entries currently orange-highlighted
+        let highlightedMarkerPoints = []; // point objects currently orange-highlighted
+        // 'line' or 'point', matching whichever kind of click set the two lists above - only
+        // that entity type gets its tooltip forced open (a point click colors its lines
+        // orange too, but their tooltips stay off; only the clicked point's tooltip shows).
+        let highlightTriggerType = null;
+
+        const participantColors = [
+            "#8DD3C7", "#F1F0BC", "#D9A0AC", "#A9A1B3", "#EFB46F",
+            "#BBDC77", "#F0D1E1", "#C9A8C9", "#C8D3C3", "#FFED6F"
+        ];
+        // Participant IDs are "P1".."P10" - map each to one color, in order, wrapping
+        // around past 10 rather than erroring if more participants are added later.
+        function getParticipantColor(participantId) {
+            const n = parseInt(participantId.replace(/\D/g, ''), 10);
+            const index = (Number.isFinite(n) ? n - 1 : 0) % participantColors.length;
+            return participantColors[index];
+        }
+
+        function hexToHsl(hex) {
+            const r = parseInt(hex.slice(1, 3), 16) / 255;
+            const g = parseInt(hex.slice(3, 5), 16) / 255;
+            const b = parseInt(hex.slice(5, 7), 16) / 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h = 0;
+            const l = (max + min) / 2;
+            const d = max - min;
+            if (d !== 0) {
+                switch (max) {
+                    case r: h = ((g - b) / d) % 6; break;
+                    case g: h = (b - r) / d + 2; break;
+                    default: h = (r - g) / d + 4;
+                }
+                h *= 60;
+                if (h < 0) h += 360;
+            }
+            return h;
+        }
+
+        // The bright highlight color for a network's clicked line/point used to be one fixed
+        // orange for everyone (a placeholder from testing on Cheryl alone). Each participant
+        // now gets their own highlight: the same hue as their assigned pastel color, pushed
+        // to a fixed vivid saturation/lightness instead of the pastel's own soft values - so
+        // it reads as "an intense version of this participant's color", not an unrelated hue.
+        function getHighlightColor(participantId) {
+            const hue = hexToHsl(getParticipantColor(participantId));
+            return `hsl(${hue.toFixed(1)}, 90%, 50%)`;
+        }
+
+        const modeColors = {
+            'driving': 'white',
+            'walking': 'grey',
+            'MARTA': 'orange',
+            'transit': 'orange',
+            'str_line': 'black'
+        };
+
+        // Google's TravelMode enum only exists once the SDK has loaded, so this stays plain
+        // strings and gets resolved via google.maps.TravelMode[...] inside fetchGoogleDirections
+        // (called after initMap, guaranteed post-load) rather than referencing `google` here.
+        const googleTravelModeMap = { driving: 'DRIVING', walking: 'WALKING', MARTA: 'TRANSIT' };
+
+        // Real routed paths, rolled out to every participant now that the approach checked
+        // out on Cheryl alone. googleTravelModeMap covers driving/walking/MARTA, so all three
+        // modes present in this data have somewhere to route to.
+        const routedParticipants = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10'];
+
+        // Called automatically by the Google Maps script tag's callback=initMap once the SDK
+        // has actually finished loading - not invoked manually, so there's no load-order race.
+        function initMap() {
+            console.log("Initializing Leaflet map...");
+            directionsService = new google.maps.DirectionsService();
+
+            map = L.map('map').setView([33.7490, -84.3880], 13); // Centered on Atlanta
+
+            // CartoDB Dark Matter - free, no API key required, built for dark basemaps.
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+
+            loadGeoJSON();
+            document.getElementById("participantSelect").addEventListener("change", () => {
+                highlightedLines = [];
+                highlightedMarkerPoints = [];
+                highlightTriggerType = null;
+                highlightParticipantRoutes();
+            });
+        }
+
+        function loadGeoJSON() {
+            fetch('data/ParticipantPointsMerged.geojson')
+                .then(response => response.json())
+                .then(geojsonData => {
+                    const groupedRoutes = {};
+                    const participantSet = new Set();
+                    const participantNames = {}; // id -> participantName, for the dropdown labels
+
+                    geojsonData.features.forEach(feature => {
+                        const participantId = feature.properties.layer;
+                        const coords = {
+                            lat: feature.geometry.coordinates[1],
+                            lng: feature.geometry.coordinates[0],
+                            // Used by fetchGoogleDirections below: the destination point's
+                            // `mode` decides which routed path to draw for pairs touching it.
+                            mode: feature.properties.mode,
+                            description: feature.properties.description,
+                            participantName: feature.properties.participantName
+                        };
+
+                        if (!participantId) return;
+                        participantSet.add(participantId);
+                        participantNames[participantId] = feature.properties.participantName;
+
+                        if (!groupedRoutes[participantId]) {
+                            groupedRoutes[participantId] = [];
+                        }
+                        groupedRoutes[participantId].push(coords);
+                    });
+
+                    // Populate dropdown - value stays the "P#" id (everything internally
+                    // keys off that), but the label shown to the user is the participant's name.
+                    const selectElement = document.getElementById("participantSelect");
+                    participantSet.forEach(id => {
+                        const option = document.createElement("option");
+                        option.value = id;
+                        option.textContent = participantNames[id] || `Participant ${id}`;
+                        selectElement.appendChild(option);
+                    });
+
+                    allGroupedRoutes = groupedRoutes; // for the bounding-box rectangle later
+
+                    // Process routes for each participant. Each fetch function registers its
+                    // own line into allRoutes directly (with its start/end points attached),
+                    // rather than being collected here after the fact - needed so
+                    // highlightParticipantRoutes() can later find "every line touching point X".
+                    Object.keys(groupedRoutes).forEach(participantId => {
+                        let routeLines = drawStraightLineRoutes(groupedRoutes[participantId], participantId);
+                        routeLayers[participantId] = routeLines;
+                    });
+
+                    styleWayPoints(groupedRoutes);
+                    buildLegend(participantNames);
+
+                    // Highlight routes for the first participant by default
+                    highlightParticipantRoutes();
+                })
+                .catch(error => console.error("Error loading GeoJSON:", error));
+        }
+
+        function drawStraightLineRoutes(points, participantId) {
+            let lines = [];
+            const color = getParticipantColor(participantId);
+
+            // Create a fully connected matrix where every point is linked to every other,
+            // each pair drawn exactly once (i < j, not i !== j) since a straight line from
+            // A to B is visually identical to one from B to A.
+            for (let i = 0; i < points.length; i++) {
+                for (let j = i + 1; j < points.length; j++) {
+                    const startCoords = points[i];
+                    const endCoords = points[j];
+
+                    fetchStraightLineRoute(startCoords, endCoords, lines, color, participantId, endCoords.mode);
+
+                    // Test rollout: real routed path drawn on top of the straight line,
+                    // mode decided by the destination point (points[j] in this pair).
+                    // Note there's no real trip chronology in this data - "destination"
+                    // just means whichever point comes second in this loop's pairing.
+                    if (routedParticipants.includes(participantId)) {
+                        fetchGoogleDirections(startCoords, endCoords, endCoords.mode, lines, participantId);
+                    }
+                }
+            }
+
+            return lines;
+        }
+
+        function fetchGoogleDirections(startCoords, endCoords, mode, lines, participantId) {
+            const travelModeKey = googleTravelModeMap[mode];
+            if (!travelModeKey) {
+                console.warn(`No Google travel mode mapped for "${mode}" - skipping`, startCoords, '->', endCoords);
+                return;
+            }
+
+            const request = {
+                origin: { lat: startCoords.lat, lng: startCoords.lng },
+                destination: { lat: endCoords.lat, lng: endCoords.lng },
+                travelMode: google.maps.TravelMode[travelModeKey]
+            };
+
+            directionsService.route(request, (result, status) => {
+                if (status !== 'OK' || !result.routes || !result.routes[0]) {
+                    console.warn(`No ${mode} (Google mode: ${travelModeKey}) route returned for`, startCoords, '->', endCoords, status);
+                    return;
+                }
+
+                // overview_path is an array of google.maps.LatLng objects - .lat()/.lng() are
+                // methods on that class, not plain properties, and Leaflet wants [lat, lng].
+                const latLngs = result.routes[0].overview_path.map(p => [p.lat(), p.lng()]);
+                const polyline = L.polyline(latLngs, {
+                    color: getParticipantColor(participantId),
+                    weight: 4,
+                    opacity: 0.8
+                }).addTo(map);
+                lines.push(polyline);
+
+                // This arrives after loadGeoJSON's initial pass has already run (this is
+                // async), so register directly here instead - otherwise
+                // highlightParticipantRoutes() would never see it and it'd stay full-opacity
+                // (and un-dimmable/un-highlightable) regardless of what's selected or clicked.
+                // type:'routed' keeps this line at its thicker, solid weight in
+                // highlightParticipantRoutes() - dashing is what distinguishes it from the
+                // straight-line reference now, not color. Tooltip binding is handled centrally
+                // in highlightParticipantRoutes() too, since it needs to turn off for
+                // non-visible lines - see that function.
+                const routedEntry = { routeLine: polyline, participantId, type: 'routed', startCoords, endCoords, mode };
+                allRoutes.push(routedEntry);
+
+                // The straight line for this exact pair was already created (synchronously,
+                // before this async response arrived) - find it by matching the same
+                // start/end point objects and link the two together, so clicking either one
+                // (once isolated) can highlight both as a pair. Straight-line side of the
+                // link is set here since this routed line didn't exist yet when it was made.
+                const siblingStraight = allRoutes.find(e =>
+                    e !== routedEntry && e.type === 'straight' &&
+                    e.participantId === participantId &&
+                    e.startCoords === startCoords && e.endCoords === endCoords
+                );
+                if (siblingStraight) {
+                    siblingStraight.pairedWith = routedEntry;
+                    routedEntry.pairedWith = siblingStraight;
+                }
+
+                polyline.on('click', () => handleLineClick(routedEntry));
+                highlightParticipantRoutes(); // apply current selection/highlight state immediately
+            });
+        }
+
+        function fetchStraightLineRoute(startCoords, endCoords, lines, color, participantId, mode) {
+            const polyline = L.polyline([
+                [startCoords.lat, startCoords.lng],
+                [endCoords.lat, endCoords.lng]
+            ], {
+                color: color || modeColors['str_line'],
+                weight: 2,
+                opacity: 0.6,
+                dashArray: '1,10'
+            }).addTo(map);
+
+            lines.push(polyline);
+            const entry = { routeLine: polyline, participantId, type: 'straight', startCoords, endCoords, mode };
+            allRoutes.push(entry);
+            // pairedWith gets set later, from fetchGoogleDirections, once/if the routed
+            // version of this same pair arrives (it's async and hasn't run yet at this point).
+
+            polyline.on('click', () => handleLineClick(entry));
+        }
+
+        // If this line's own participant is already the isolated one, highlight it and its
+        // straight/routed counterpart in bright orange instead of re-isolating (which would
+        // be a no-op anyway). Any other click - a different participant's line, or nothing
+        // isolated yet - isolates that network fresh, same as clicking one of its points.
+        function handleLineClick(entry) {
+            const selectedId = document.getElementById("participantSelect").value;
+            if (selectedId === entry.participantId) {
+                highlightedLines = [entry, entry.pairedWith].filter(Boolean);
+                highlightedMarkerPoints = [entry.startCoords, entry.endCoords];
+                highlightTriggerType = 'line';
+            } else {
+                highlightedLines = [];
+                highlightedMarkerPoints = [];
+                highlightTriggerType = null;
+                document.getElementById("participantSelect").value = entry.participantId;
+            }
+            highlightParticipantRoutes();
+        }
+
+        // Shape now encodes *what kind of place* a point is (its `description`), while
+        // color still encodes *which participant* it belongs to - two independent
+        // categorical variables. All 9 description values get their own distinct shape
+        // (star.svg and octagon.svg were added alongside the original 7 so nothing repeats).
+        const descriptionShapes = {
+            'Community Engagement': 'src/assets/participant_points_shape_icons/circle.svg',
+            'Education': 'src/assets/participant_points_shape_icons/flare.svg',
+            'Family': 'src/assets/participant_points_shape_icons/hexagon.svg',
+            'Grocery': 'src/assets/participant_points_shape_icons/pentagon.svg',
+            'Health': 'src/assets/participant_points_shape_icons/rhombus.svg',
+            'Recreation': 'src/assets/participant_points_shape_icons/square.svg',
+            'Religious': 'src/assets/participant_points_shape_icons/triangle.svg',
+            'Social': 'src/assets/participant_points_shape_icons/star.svg',
+            'Workplace': 'src/assets/participant_points_shape_icons/octagon.svg',
+            'Home': 'src/assets/participant_points_shape_icons/house.svg'
+        };
+
+        // The source SVGs are solid single-color shapes (fill baked into the file), so
+        // rather than swapping files per color, each icon is used as a CSS mask over a
+        // div painted in the participant's actual color - that gives an exact color
+        // match instead of an approximation from a CSS filter.
+        function coloredShapeIcon(shapeUrl, color) {
+            const maskCss = `url('${shapeUrl}') center / contain no-repeat`;
+            return L.divIcon({
+                className: 'participant-marker',
+                html: `<div style="width:24px;height:24px;background-color:${color};` +
+                    `-webkit-mask:${maskCss};mask:${maskCss};"></div>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+        }
+
+        // Home points get the same masked house shape, plus a soft glowing ring behind it
+        // (a larger, blurred, semi-transparent circle in the participant's own color) so
+        // they read as visually distinct from every other point at a glance.
+        function coloredHomeIcon(shapeUrl, color) {
+            const maskCss = `url('${shapeUrl}') center / contain no-repeat`;
+            // House shape stays 36x36 (1.5x the 24x24 size of every other symbol) - only the
+            // halo ring around it is tightened (was 12px margin in a 60px container).
+            return L.divIcon({
+                className: 'participant-marker home-marker',
+                html: `<div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;` +
+                    `border-radius:50%;background:${color};opacity:0.35;filter:blur(3px);` +
+                    `position:absolute;top:0;left:0;"></div>` +
+                    `<div style="width:36px;height:36px;background-color:${color};position:relative;` +
+                    `margin:2px;-webkit-mask:${maskCss};mask:${maskCss};"></div>`,
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            });
+        }
+
+        // Icons for whichever points are highlighted (line-pair endpoints, or a clicked
+        // point) - same per-participant highlight color as the lines themselves now, so
+        // cached by "description|participantId" instead of description alone.
+        const highlightIconCache = {};
+        function getHighlightIcon(description, participantId) {
+            const cacheKey = `${description}|${participantId}`;
+            if (!highlightIconCache[cacheKey]) {
+                const shapeUrl = descriptionShapes[description];
+                const color = getHighlightColor(participantId);
+                highlightIconCache[cacheKey] = description === 'Home'
+                    ? coloredHomeIcon(shapeUrl, color)
+                    : coloredShapeIcon(shapeUrl, color);
+            }
+            return highlightIconCache[cacheKey];
+        }
+
+        function styleWayPoints(groupedRoutes) {
+            const iconCache = {}; // keyed by "description|color" to avoid rebuilding duplicates
+
+            for (const id in groupedRoutes) {
+                const color = getParticipantColor(id);
+                groupedRoutes[id].forEach((point) => {
+                    const shapeUrl = descriptionShapes[point.description];
+                    if (!shapeUrl) return;
+
+                    const isHome = point.description === 'Home';
+                    const cacheKey = `${point.description}|${color}`;
+                    if (!iconCache[cacheKey]) {
+                        iconCache[cacheKey] = isHome
+                            ? coloredHomeIcon(shapeUrl, color)
+                            : coloredShapeIcon(shapeUrl, color);
+                    }
+
+                    const marker = L.marker([point.lat, point.lng], { icon: iconCache[cacheKey] })
+                        .addTo(map);
+                    // Tooltip binding is managed centrally in highlightParticipantRoutes() -
+                    // it needs to turn off for markers outside the isolated network, so it
+                    // isn't just bound once here. Using bindTooltip (hover-native) rather than
+                    // bindPopup (click-native) keeps this from competing with the click below.
+
+                    // If this point's own network is already isolated, highlight every line
+                    // touching it (however many that is) plus the point itself, instead of
+                    // re-isolating (a no-op anyway, since it's already isolated). Any other
+                    // click - a different participant's point, or nothing isolated yet -
+                    // isolates that network fresh, same as clicking one of its lines.
+                    marker.on('click', () => {
+                        const selectedId = document.getElementById("participantSelect").value;
+                        if (selectedId === id) {
+                            highlightedLines = allRoutes.filter(e =>
+                                e.participantId === id &&
+                                (e.startCoords === point || e.endCoords === point)
+                            );
+                            highlightedMarkerPoints = [point];
+                            highlightTriggerType = 'point';
+                        } else {
+                            highlightedLines = [];
+                            highlightedMarkerPoints = [];
+                            highlightTriggerType = null;
+                            document.getElementById("participantSelect").value = id;
+                        }
+                        highlightParticipantRoutes();
+                    });
+
+                    allMarkers.push({
+                        marker,
+                        participantId: id,
+                        tooltipText: `${point.participantName || id}: ${point.description || ''}`,
+                        point,
+                        normalIcon: iconCache[cacheKey]
+                    });
+                });
+            }
+        }
+
+        // Builds the legend from the same participantColors/descriptionShapes data driving
+        // the map itself, rather than a hand-written list, so it can't drift out of sync.
+        function buildLegend(participantNames) {
+            const colorRows = Object.keys(participantNames)
+                .sort((a, b) => parseInt(a.replace(/\D/g, ''), 10) - parseInt(b.replace(/\D/g, ''), 10))
+                .map(id => {
+                    const color = getParticipantColor(id);
+                    return `<div><span class="swatch" style="background:${color};"></span>${participantNames[id]}</div>`;
+                }).join('');
+
+            const shapeRows = Object.keys(descriptionShapes).map(description => {
+                const maskCss = `url('${descriptionShapes[description]}') center / contain no-repeat`;
+                return `<div><span class="shape-swatch" style="-webkit-mask:${maskCss};mask:${maskCss};"></span>${description}</div>`;
+            }).join('');
+
+            document.getElementById('legend').innerHTML =
+                '<strong>Participants</strong>' + colorRows +
+                '<strong>Place Type</strong>' + shapeRows;
+        }
+
+        // Draws (or removes) a static rectangle framing the isolated network's full extent -
+        // purely visual, doesn't move the camera. Called from highlightParticipantRoutes(),
+        // which now runs on every line click too (for the orange pair-highlight) - skip the
+        // rebuild whenever the isolated participant hasn't actually changed, otherwise this
+        // was tearing down and recreating an identical rectangle on every single line click.
+        function updateNetworkBoundingBox(selectedId) {
+            if (selectedId === boundingBoxParticipantId) return;
+            boundingBoxParticipantId = selectedId || null;
+
+            if (networkBoundingBox) {
+                map.removeLayer(networkBoundingBox);
+                networkBoundingBox = null;
+            }
+
+            const points = selectedId && allGroupedRoutes[selectedId];
+            if (!points || !points.length) return;
+
+            const bounds = L.latLngBounds(points.map(p => [p.lat, p.lng]));
+            networkBoundingBox = L.rectangle(bounds, {
+                color: '#71797E',
+                weight: 1.5,
+                fill: false,
+                interactive: false
+            }).addTo(map);
+        }
+
+        function tripTooltipText(startCoords, endCoords, mode) {
+            // Double-headed arrow deliberately, not a single-headed one - these lines
+            // represent an undirected pair (see drawStraightLineRoutes), not a recorded
+            // direction of travel, so the tooltip shouldn't visually imply one.
+            return `${startCoords.description || 'Start'} ↔ ${endCoords.description || 'End'} (${mode})`;
+        }
+
+        function highlightParticipantRoutes() {
+            const selectedId = document.getElementById("participantSelect").value;
+            updateNetworkBoundingBox(selectedId);
+
+            // When a line click highlighted a straight+routed pair, both turn orange, but
+            // only ONE should show a forced-open tooltip (otherwise they overlap) - prefer
+            // the routed one since it's the real path, falling back to whichever's actually
+            // highlighted when there's no routed counterpart (no routing on this participant,
+            // or Google couldn't route that particular pair).
+            const tooltipTargetLine = highlightTriggerType === 'line'
+                ? (highlightedLines.find(e => e.type === 'routed') || highlightedLines[0] || null)
+                : null;
+
+            // Both line types always use their participant's color - routed and straight
+            // are told apart by weight/dash (set at creation: routed is thick and solid,
+            // straight is thin and dashed), not by color. Selection only ever changes
+            // opacity, never color or weight, so "nothing selected" still shows the full
+            // per-participant scheme rather than graying everything out. On top of that,
+            // whatever's in highlightedLines (either a clicked line + its counterpart, or
+            // every line touching a clicked point) overrides to that participant's own
+            // highlight color - a vivid, saturated version of their assigned pastel hue,
+            // not one fixed color shared by everyone.
+            allRoutes.forEach((entry) => {
+                const { routeLine, participantId, type, startCoords, endCoords, mode } = entry;
+                const isVisible = !selectedId || participantId === selectedId;
+                const isHighlightedLine = participantId === selectedId && highlightedLines.includes(entry);
+
+                if (isHighlightedLine) {
+                    routeLine.setStyle({
+                        color: getHighlightColor(participantId),
+                        weight: type === 'routed' ? 8 : 3,
+                        opacity: 1
+                    });
+                } else {
+                    const color = getParticipantColor(participantId);
+                    // Both line types get a wider, easier-to-click hitbox once their network
+                    // is actually isolated (a specific participant selected, not the default
+                    // "nothing selected, everyone shown thin" state) - dimmed lines belonging
+                    // to other participants stay thin, same as the default view, since
+                    // there's no reason to widen a click target that's barely visible anyway.
+                    const isIsolatedForThisLine = selectedId && isVisible;
+                    const weight = isIsolatedForThisLine ? 4 : 2;
+                    const visibleOpacity = type === 'routed' ? 0.8 : 0.6;
+                    routeLine.setStyle({ color, weight, opacity: isVisible ? visibleOpacity : 0.15 });
+                }
+
+                // Tooltips only stay bound on visible lines - dimmed/hidden lines outside the
+                // isolated network shouldn't show their info on hover. Only tooltipTargetLine
+                // (computed above - the routed half of a highlighted pair, when one exists)
+                // gets permanent:true instead of the normal hover-only tooltip, so it stays
+                // visible with no open/close event needed at all. Always unbind first (if a
+                // tooltip exists) rather than only conditionally rebinding when something
+                // looks out of date - a "skip if already correct" check here was leaving
+                // Leaflet's internal tooltip state inconsistent in some edge case and
+                // crashing inside its own Tooltip.js on a later call.
+                const shouldForceOpen = entry === tooltipTargetLine;
+                if (routeLine.getTooltip()) {
+                    routeLine.unbindTooltip();
+                }
+                if (isVisible) {
+                    routeLine.bindTooltip(tripTooltipText(startCoords, endCoords, mode), { permanent: shouldForceOpen });
+                }
+
+                // Dimmed lines belonging to other participants stay in the DOM (still needed
+                // for their own opacity/position) but stop accepting clicks/hovers entirely
+                // while a network is isolated - otherwise, in dense areas, an overlapping
+                // dimmed line can steal a click meant for the isolated network's own thin
+                // line underneath/nearby. Avoided bringToFront()-style z-order tricks here
+                // deliberately, since that already caused its own hover-confusion bug earlier.
+                const lineEl = routeLine.getElement();
+                if (lineEl) lineEl.style.pointerEvents = isVisible ? '' : 'none';
+            });
+
+            // Points follow the same rule as their network's lines: full opacity when
+            // nothing's selected or they belong to the selected participant, dimmed otherwise -
+            // and likewise, tooltips only stay active on the currently-visible points.
+            allMarkers.forEach(({ marker, participantId, tooltipText, point, normalIcon }) => {
+                const isVisible = !selectedId || participantId === selectedId;
+                // Home markers stay fully visible and clickable regardless of isolation state
+                // (see the pointer-events note below) - they're the deliberate, discoverable
+                // way to jump to a different participant's network, so dimming them to 0.15
+                // like everything else would defeat that purpose even though they're still
+                // technically clickable underneath.
+                const isHome = point.description === 'Home';
+                marker.setOpacity(isVisible || isHome ? 1 : 0.15);
+
+                // Highlighted points (either a clicked line's two endpoints, or a single
+                // clicked point) get swapped to that participant's own highlight color icon
+                // either way - color highlighting doesn't depend on trigger type, only the
+                // tooltip-forcing below does. Everyone else keeps their normal icon.
+                const isHighlightedPoint = participantId === selectedId && highlightedMarkerPoints.includes(point);
+                marker.setIcon(isHighlightedPoint ? getHighlightIcon(point.description, participantId) : normalIcon);
+
+                // Point tooltips only force open when a POINT was clicked - if a line click
+                // highlighted this point as one of its endpoints, it still turns orange but
+                // its tooltip stays off, since a line click should only surface the route's
+                // own tooltip (see the mirrored rule on shouldForceOpen above). permanent:true
+                // needs no open/close event at all, unlike openTooltip() which raced against
+                // setIcon()'s DOM replacement above and intermittently lost. Always unbind
+                // first (if a tooltip exists) rather than conditionally skipping the rebind -
+                // that "skip if already correct" check was leaving Leaflet's internal tooltip
+                // state inconsistent in some edge case and crashing inside its own Tooltip.js.
+                const shouldForceOpen = isHighlightedPoint && highlightTriggerType === 'point';
+                if (marker.getTooltip()) {
+                    marker.unbindTooltip();
+                }
+                if (isVisible) {
+                    marker.bindTooltip(tooltipText, { permanent: shouldForceOpen });
+                }
+
+                // Same reasoning as the line loop above: dimmed points from other
+                // participants stop accepting clicks while a network is isolated, so they
+                // can't steal a click meant for one of the isolated network's own points.
+                // Home markers (isHome, computed above) are the deliberate exception - see
+                // the comment on that line for why.
+                const markerEl = marker.getElement();
+                if (markerEl) markerEl.style.pointerEvents = (isVisible || isHome) ? '' : 'none';
+            });
+        }
+    </script>
+
+</body>
+</html>

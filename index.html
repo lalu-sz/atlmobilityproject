@@ -203,10 +203,37 @@
                 </div>
 
                 <!-- Map Container -->
-                <div id="map"></div>
+                <div id="map">
+                    <div id="network-controls">
+                        <label for="participantSelect">Select Participant:</label>
+                        <select id="participantSelect">
+                            <option value="">-- Show all networks --</option>
+                        </select>
+                    </div>
+                    <div id="legend"></div>
+                </div>
             </div>
             <!-- Footer -->
-            <footer class="mastfoot mt-auto"></footer>
+            <footer class="mastfoot mt-auto">
+                <hr>
+                <p>Many thanks to Boyd Shearer for his instruction and assistance. <br>
+                    Check out my other projects on <a href="https://github.com/lalu-sz">GitHub</a> and my <a
+                        href="https://drive.google.com/file/d/1u9nUqclvUbYF0suHBJti0vAPzyB5br8q/view?usp=sharing">Mapping
+                        Portfolio.</a></p>
+
+                <div>
+                    <a href="https://geography.as.uky.edu/users/lbsp232" target="_blank">
+                        <img class="my-photo"
+                            src="https://geography.as.uky.edu/sites/default/files/styles/fwrd_directory_photo/public/pictures/1717313652.062212%20%283%29.jpg"
+                            alt="Lalu">
+                    </a>
+
+                    <a href="https://newmapsplus.github.io">
+                        <img src="https://newmapsplus.github.io/assets/graphics/logo-2018-nmp-75px-h-gray.png"
+                            alt="University of Kentucky Geography">
+                    </a>
+                </div>
+            </footer>
         </main>
     </div>
 
@@ -216,8 +243,17 @@
         crossorigin="anonymous"></script>
     <!-- Leaflet JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <!-- Defined synchronously, before the async Google Maps script tag below, so
+         window.initMap always exists by the time the SDK finishes loading and tries to
+         call it - regardless of whether that happens before or after src/map.js (a
+         deferred module script) has run. -->
+    <script>
+        window.initMap = function () {
+            window.dispatchEvent(new Event('google-maps-ready'));
+        };
+    </script>
     <script async defer
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD8eMkO29SDNWF1XQEGE7ejGjjFx2ZUdrU&libraries=geometry"></script>
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD8eMkO29SDNWF1XQEGE7ejGjjFx2ZUdrU&libraries=geometry&loading=async&callback=initMap"></script>
 
    <script type="module" src="src/map.js"></script>
 </body>

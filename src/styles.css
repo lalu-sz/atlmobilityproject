@@ -1,7 +1,11 @@
  /* Cover template styles */
+        .cover-container {
+            min-height: 100vh;
+        }
+
         .inner.cover {
             width: 100%;
-            height: 100%;
+            flex: 1 0 auto;
             padding-top: 2%;
             padding-left: 2%;
             padding-right: 2%;
@@ -13,7 +17,7 @@
             padding: 0;
             display: flex;
             height: 100%;
-            background-image: url('assets/fivepoints.jpg');
+            background-image: url('assets/fivePoints.jpg');
             background-size: cover;
             background-position: center;
             position: relative;
@@ -205,7 +209,7 @@
 
 
         #map {
-            background: #b4bd9b;
+            background: #171717;
             flex: 1;
             height: 100vh;
             /* Fixed height */
@@ -262,6 +266,60 @@
         }
 
 
+        /* Hover-info icon explaining the race classification rule, pinned to the
+           top-right corner of a legend control (see addRaceInfoIcon in map.js) */
+        .race-info-icon {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #4a4a4a;
+            color: #fff;
+            font-size: 11px;
+            font-style: italic;
+            font-family: Georgia, serif;
+            line-height: 15px;
+            text-align: center;
+            cursor: help;
+        }
+
+        .race-info-tooltip {
+            display: none;
+            position: absolute;
+            top: 19px;
+            right: 0;
+            width: 220px;
+            background: #fff;
+            color: #333;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            padding: 8px;
+            font-size: 11px;
+            font-style: normal;
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            text-align: left;
+        }
+
+        .race-info-icon:hover .race-info-tooltip {
+            display: block;
+        }
+
+        /* Race color-swatch legend appended below the layer toggle list */
+        .race-legend {
+            margin-top: 8px;
+            padding-top: 8px;
+            padding-right: 20px;
+            border-top: 1px solid rgba(0, 0, 0, 0.2);
+            text-align: left;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
         /* Additional styles for layer labels */
         .custom-layers-control .leaflet-control-layers-label {
             font-weight: bold;
@@ -307,3 +365,66 @@
         }
 
         @media (min-width: 768px) {}
+
+        /* Mobility (OD) network controls - ported from Participant_ODNetwork_MobilityMode.html */
+        #network-controls {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+
+        #legend {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: white;
+            padding: 10px 12px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            font-size: 12px;
+            line-height: 1.7;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        #legend strong {
+            display: block;
+            margin: 6px 0 2px;
+            font-size: 12px;
+        }
+
+        #legend strong:first-child {
+            margin-top: 0;
+        }
+
+        #legend .swatch {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin-right: 6px;
+            vertical-align: middle;
+            border-radius: 50%;
+        }
+
+        #legend .shape-swatch {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            margin-right: 6px;
+            vertical-align: middle;
+            background: #444;
+        }
+
+        /* Leaflet gives clickable vector layers tabindex="0" for keyboard accessibility,
+           which makes the browser draw its default focus-ring rectangle around whichever
+           line was just clicked. */
+        .leaflet-interactive:focus {
+            outline: none;
+        }

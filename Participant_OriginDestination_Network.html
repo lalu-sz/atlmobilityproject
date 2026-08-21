@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet Routes by Participant</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        h2 {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            margin: 0;
+            padding: 6px 10px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            font-size: 16px;
+        }
+
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+
+        #map {
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #legend {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: white;
+            padding: 10px 12px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            font-size: 12px;
+            line-height: 1.7;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        #legend strong {
+            display: block;
+            margin: 6px 0 2px;
+            font-size: 12px;
+        }
+
+        #legend strong:first-child {
+            margin-top: 0;
+        }
+
+        #legend .swatch {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin-right: 6px;
+            vertical-align: middle;
+            border-radius: 50%;
+        }
+
+        #legend .shape-swatch {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            margin-right: 6px;
+            vertical-align: middle;
+            background: #444;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Leaflet Map with Participant Routes</h2>
+    <div id="controls">
+        <label for="participantSelect">Select Participant:</label>
+        <select id="participantSelect">
+            <option value="">-- Select a Participant --</option>
+        </select>
+    </div>
+
+    <div id="legend"></div>
+
+    <div id="map"></div>
+
+    <script>
+        let map;
+        let allRoutes = []; // Store all route polylines globally
+        let routeLayers = {}; // Store polylines per participant
+        let allMarkers = []; // Store { marker, participantId } for every point, for dim/isolate
+        const googleApiKey = 'AIzaSyD8eMkO29SDNWF1XQEGE7ejGjjFx2ZUdrU'; // Replace with your Google API key
+
+        const participantColors = [
+            "#8DD3C7", "#F1F0BC", "#D9A0AC", "#A9A1B3", "#EFB46F",
+            "#BBDC77", "#F0D1E1", "#C9A8C9", "#C8D3C3", "#FFED6F"
+        ];
+        // Participant IDs are "P1".."P10" - map each to one color, in order, wrapping
+        // around past 10 rather than erroring if more participants are added later.
+        function getParticipantColor(participantId) {
+            const n = parseInt(participantId.replace(/\D/g, ''), 10);
+            const index = (Number.isFinite(n) ? n - 1 : 0) % participantColors.length;
+            return participantColors[index];
+        }
+
+        const modeColors = {
+            'driving': 'white',
+            'walking': 'grey',
+            'transit': 'orange',
+            'str_line': 'black'
+        };
+
+        function initMap() {
+            console.log("Initializing Leaflet map...");
+            map = L.map('map').setView([33.7490, -84.3880], 13); // Centered on Atlanta
+
+            // CartoDB Dark Matter - free, no API key required, built for dark basemaps.
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+
+            loadGeoJSON();
+            document.getElementById("participantSelect").addEventListener("change", highlightParticipantRoutes);
+        }
+
+        function loadGeoJSON() {
+            fetch('data/ParticipantPointsMerged.geojson')
+                .then(response => response.json())
+                .then(geojsonData => {
+                    const groupedRoutes = {};
+                    const participantSet = new Set();
+                    const participantNames = {}; // id -> participantName, for the dropdown labels
+
+                    geojsonData.features.forEach(feature => {
+                        const participantId = feature.properties.layer;
+                        const coords = {
+                            lat: feature.geometry.coordinates[1],
+                            lng: feature.geometry.coordinates[0],
+                            // Carried through now, unused until the network-routing pass:
+                            // each point's `mode` will decide which routed path to draw
+                            // for pairs touching it (see fetchGoogleDirections below).
+                            mode: feature.properties.mode,
+                            name: feature.properties.Name,
+                            description: feature.properties.description,
+                            participantName: feature.properties.participantName
+                        };
+
+                        if (!participantId) return;
+                        participantSet.add(participantId);
+                        participantNames[participantId] = feature.properties.participantName;
+
+                        if (!groupedRoutes[participantId]) {
+                            groupedRoutes[participantId] = [];
+                        }
+                        groupedRoutes[participantId].push(coords);
+                    });
+
+                    // Populate dropdown - value stays the "P#" id (everything internally
+                    // keys off that), but the label shown to the user is the participant's name.
+                    const selectElement = document.getElementById("participantSelect");
+                    participantSet.forEach(id => {
+                        const option = document.createElement("option");
+                        option.value = id;
+                        option.textContent = participantNames[id] || `Participant ${id}`;
+                        selectElement.appendChild(option);
+                    });
+
+                    // Process routes for each participant
+                    Object.keys(groupedRoutes).forEach(participantId => {
+                        let routeLines = drawStraightLineRoutes(groupedRoutes[participantId], participantId);
+                        routeLayers[participantId] = routeLines;
+                        routeLines.forEach(routeLine => {
+                            allRoutes.push({ routeLine, participantId });
+                        });
+                    });
+
+                    styleWayPoints(groupedRoutes);
+                    buildLegend(participantNames);
+
+                    // Highlight routes for the first participant by default
+                    highlightParticipantRoutes();
+                })
+                .catch(error => console.error("Error loading GeoJSON:", error));
+        }
+
+        function drawStraightLineRoutes(points, participantId) {
+            let lines = [];
+            const color = getParticipantColor(participantId);
+
+            // Create a fully connected matrix where every point is linked to every other,
+            // each pair drawn exactly once (i < j, not i !== j) since a straight line from
+            // A to B is visually identical to one from B to A.
+            for (let i = 0; i < points.length; i++) {
+                for (let j = i + 1; j < points.length; j++) {
+                    const startCoords = points[i];
+                    const endCoords = points[j];
+
+                    fetchStraightLineRoute(startCoords, endCoords, lines, color, participantId);
+                }
+            }
+
+            return lines;
+        }
+
+        // Not called yet - reserved for the future network-routing pass, where each pair's
+        // `mode` (from the destination point's `mode` property) picks the routed path
+        // instead of the straight line drawn by fetchStraightLineRoute below.
+        function fetchGoogleDirections(startCoords, endCoords, mode, lines) {
+            const directionsUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${startCoords.lat},${startCoords.lng}&destination=${endCoords.lat},${endCoords.lng}&mode=${mode}&key=${googleApiKey}`;
+
+            fetch(directionsUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.routes && data.routes[0]) {
+                        const route = data.routes[0].legs[0].steps.map(step => [
+                            [step.start_location.lat, step.start_location.lng],
+                            [step.end_location.lat, step.end_location.lng]
+                        ]);
+
+                        route.forEach(coords => {
+                            const polyline = L.polyline(coords, {
+                                color: modeColors[mode],
+                                weight: 4,
+                                opacity: 0.8
+                            }).addTo(map);
+                            lines.push(polyline);
+                        });
+                    }
+                })
+                .catch(error => console.error("Error fetching Google Directions:", error));
+        }
+
+        function fetchStraightLineRoute(startCoords, endCoords, lines, color, participantId) {
+            const polyline = L.polyline([
+                [startCoords.lat, startCoords.lng],
+                [endCoords.lat, endCoords.lng]
+            ], {
+                color: color || modeColors['str_line'],
+                weight: 2,
+                opacity: 0.6
+            }).addTo(map);
+
+            // Clicking a line isolates its participant's network - reuses the exact same
+            // highlight/dim logic the dropdown already drives, just triggered by a click
+            // instead of a change event.
+            polyline.on('click', () => {
+                document.getElementById("participantSelect").value = participantId;
+                highlightParticipantRoutes();
+            });
+
+            lines.push(polyline);
+        }
+
+        // Shape now encodes *what kind of place* a point is (its `description`), while
+        // color still encodes *which participant* it belongs to - two independent
+        // categorical variables. All 9 description values get their own distinct shape
+        // (star.svg and octagon.svg were added alongside the original 7 so nothing repeats).
+        const descriptionShapes = {
+            'Community Engagement': 'src/assets/participant_points_shape_icons/circle.svg',
+            'Education': 'src/assets/participant_points_shape_icons/flare.svg',
+            'Family': 'src/assets/participant_points_shape_icons/hexagon.svg',
+            'Grocery': 'src/assets/participant_points_shape_icons/pentagon.svg',
+            'Health': 'src/assets/participant_points_shape_icons/rhombus.svg',
+            'Recreation': 'src/assets/participant_points_shape_icons/square.svg',
+            'Religious': 'src/assets/participant_points_shape_icons/triangle.svg',
+            'Social': 'src/assets/participant_points_shape_icons/star.svg',
+            'Workplace': 'src/assets/participant_points_shape_icons/octagon.svg',
+            'Home': 'src/assets/participant_points_shape_icons/house.svg'
+        };
+
+        // The source SVGs are solid single-color shapes (fill baked into the file), so
+        // rather than swapping files per color, each icon is used as a CSS mask over a
+        // div painted in the participant's actual color - that gives an exact color
+        // match instead of an approximation from a CSS filter.
+        function coloredShapeIcon(shapeUrl, color) {
+            const maskCss = `url('${shapeUrl}') center / contain no-repeat`;
+            return L.divIcon({
+                className: 'participant-marker',
+                html: `<div style="width:24px;height:24px;background-color:${color};` +
+                    `-webkit-mask:${maskCss};mask:${maskCss};"></div>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+        }
+
+        // Home points get the same masked house shape, plus a soft glowing ring behind it
+        // (a larger, blurred, semi-transparent circle in the participant's own color) so
+        // they read as visually distinct from every other point at a glance.
+        function coloredHomeIcon(shapeUrl, color) {
+            const maskCss = `url('${shapeUrl}') center / contain no-repeat`;
+            // House shape is 36x36 - 1.5x the 24x24 size of every other symbol - with the
+            // halo padding scaled to match (12px margin in a 60px container).
+            return L.divIcon({
+                className: 'participant-marker home-marker',
+                html: `<div style="width:60px;height:60px;display:flex;align-items:center;justify-content:center;` +
+                    `border-radius:50%;background:${color};opacity:0.35;filter:blur(3px);` +
+                    `position:absolute;top:0;left:0;"></div>` +
+                    `<div style="width:36px;height:36px;background-color:${color};position:relative;` +
+                    `margin:12px;-webkit-mask:${maskCss};mask:${maskCss};"></div>`,
+                iconSize: [60, 60],
+                iconAnchor: [30, 30]
+            });
+        }
+
+        function styleWayPoints(groupedRoutes) {
+            const iconCache = {}; // keyed by "description|color" to avoid rebuilding duplicates
+
+            for (const id in groupedRoutes) {
+                const color = getParticipantColor(id);
+                groupedRoutes[id].forEach((point) => {
+                    const shapeUrl = descriptionShapes[point.description];
+                    if (!shapeUrl) return;
+
+                    const isHome = point.description === 'Home';
+                    const cacheKey = `${point.description}|${color}`;
+                    if (!iconCache[cacheKey]) {
+                        iconCache[cacheKey] = isHome
+                            ? coloredHomeIcon(shapeUrl, color)
+                            : coloredShapeIcon(shapeUrl, color);
+                    }
+
+                    const marker = L.marker([point.lat, point.lng], { icon: iconCache[cacheKey] })
+                        .addTo(map)
+                        .bindTooltip(`${point.participantName || id}: ${point.description || ''}`);
+
+                    // Same isolate behavior as clicking a line - reuses the dropdown's logic.
+                    // Using bindTooltip (hover-native) instead of bindPopup (click-native)
+                    // keeps this info box on hover without competing with the click below.
+                    marker.on('click', () => {
+                        document.getElementById("participantSelect").value = id;
+                        highlightParticipantRoutes();
+                    });
+
+                    allMarkers.push({ marker, participantId: id });
+                });
+            }
+        }
+
+        // Builds the legend from the same participantColors/descriptionShapes data driving
+        // the map itself, rather than a hand-written list, so it can't drift out of sync.
+        function buildLegend(participantNames) {
+            const colorRows = Object.keys(participantNames)
+                .sort((a, b) => parseInt(a.replace(/\D/g, ''), 10) - parseInt(b.replace(/\D/g, ''), 10))
+                .map(id => {
+                    const color = getParticipantColor(id);
+                    return `<div><span class="swatch" style="background:${color};"></span>${participantNames[id]}</div>`;
+                }).join('');
+
+            const shapeRows = Object.keys(descriptionShapes).map(description => {
+                const maskCss = `url('${descriptionShapes[description]}') center / contain no-repeat`;
+                return `<div><span class="shape-swatch" style="-webkit-mask:${maskCss};mask:${maskCss};"></span>${description}</div>`;
+            }).join('');
+
+            document.getElementById('legend').innerHTML =
+                '<strong>Participants</strong>' + colorRows +
+                '<strong>Place Type</strong>' + shapeRows;
+        }
+
+        function highlightParticipantRoutes() {
+            const selectedId = document.getElementById("participantSelect").value;
+
+            // Every route keeps its own participant color at all times - selection only
+            // changes weight/opacity, so "nothing selected" still shows the full
+            // per-participant color scheme instead of graying everything out.
+            allRoutes.forEach(({ routeLine, participantId }) => {
+                const color = getParticipantColor(participantId);
+                if (!selectedId) {
+                    routeLine.setStyle({ color, weight: 2, opacity: 0.6 });
+                } else if (participantId === selectedId) {
+                    routeLine.setStyle({ color, weight: 5, opacity: 0.6 });
+                } else {
+                    routeLine.setStyle({ color, weight: 2, opacity: 0.15 });
+                }
+            });
+
+            // Points follow the same rule as their network's lines: full opacity when
+            // nothing's selected or they belong to the selected participant, dimmed otherwise.
+            allMarkers.forEach(({ marker, participantId }) => {
+                marker.setOpacity(!selectedId || participantId === selectedId ? 1 : 0.15);
+            });
+        }
+
+        initMap();
+    </script>
+
+</body>
+</html>
